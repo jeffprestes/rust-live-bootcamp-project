@@ -22,3 +22,6 @@ This file contains instructions for GitHub Copilot to follow when generating cod
 - Format: `<type>[optional scope]: <description>`
 - Common types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
 - Do not include the word "Copilot" in commit messages or pull request descriptions.
+
+## Custom Commands
+- **pushtomain**: When the user mentions "pushtomain", generate a commit message, commit the changes, and push them to the origin remote repository.

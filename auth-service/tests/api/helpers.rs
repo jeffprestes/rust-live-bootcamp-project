@@ -7,7 +7,7 @@ pub struct TestApp {
 
 impl TestApp {
   pub async fn new() -> Self {
-    let app = Application::build("127.0.0.1:3000")
+    let app = Application::build("127.0.0.1:0")
     .await
     .expect("Falha ao criar aplicação.");
 
@@ -32,5 +32,17 @@ impl TestApp {
       .expect("Falha ao executar requisição GET para raiz.")
   }
 
+  pub async fn post_signup<Body>(&self, body: Body) -> reqwest::Response where Body: serde::Serialize {
+    self.http_client
+      .post(&format!("{}/signup", &self.address))
+      .json(&body)
+      .send()
+      .await
+      .expect("Falha ao executar requisição POST para /signup.")
+  }
   // TODO: Implement helper functions for all other routes (signup, login, logout, verify-2fa, and verify-token)
 }  
+
+pub fn get_random_email() -> String {
+  format!("{}@example.com", uuid::Uuid::new_v4())
+}

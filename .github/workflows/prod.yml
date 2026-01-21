@@ -1,6 +1,6 @@
 name: Build, Test and Deploy to Prod
 
-# Dispara o workflow quando mudanças são enviadas para a branch main
+# Dispara o workflow quando mudanças são enviadas para a branch main.
 on:
   push:
     branches:

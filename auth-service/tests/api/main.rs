@@ -1,2 +1,23 @@
 mod helpers;
-mod routers;
+mod login;
+mod logout;
+mod root;
+mod signup;
+mod verify_2fa;
+mod verify_token;
+
+use crate::helpers::TestApp;
+
+#[tokio::test]
+async fn root_returns_auth_ui() {
+  let app = TestApp::new().await;
+
+  let response = app.get_root().await;
+
+  assert_eq!(response.status().as_u16(), 200);
+  assert_eq!(response.headers().get("content-type").unwrap(), "text/html");
+  let _ = response.text().await.expect("Falha ao ler o corpo da resposta.");
+
+  // TODO: Implement tests for all other routes (signup, login, logout, verify-2fa, and verify-token)
+  // For now, simply assert that each route returns a 200 HTTP status code.
+}

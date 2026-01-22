@@ -78,21 +78,21 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Install sshpass
-      run: sudo apt-get install sshpass
+    #- name: Install sshpass
+    #  run: sudo apt-get install sshpass
 
-    - name: Copy compose.yml to droplet
-      run: sshpass -v -p 'xiboquinha' scp -o StrictHostKeyChecking=no compose.yml jeffprestes@${{ vars.DROPLET_IP }}:~
+    #- name: Copy compose.yml to droplet
+    #  run: sshpass -v -p 'xiboquinha' scp -o StrictHostKeyChecking=no compose.yml jeffprestes@138.197.95.239:~
 
     - name: Deploy
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ vars.DROPLET_IP }}
+        host: 138.197.95.239
         username: jeffprestes
         password: 'xiboquinha'
         script: |
           cd ~
-          export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+          export AUTH_SERVICE_IP=138.197.95.239
           docker compose down
           docker compose pull
           docker compose up -d

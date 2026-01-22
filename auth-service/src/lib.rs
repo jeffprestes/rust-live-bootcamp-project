@@ -5,6 +5,7 @@ use axum::serve::Serve;
 use tokio::net::TcpListener;
 
 pub mod routes;
+pub mod models;
 use routes::generate_routes;
 
 #[derive(Debug)]

@@ -11,6 +11,8 @@ mod verify_token;
 
 // re-export items from sub-modules
 pub use signup::signup;
+
+use crate::app_state::AppState;
 /*
 pub use login::*;
 pub use logout::*;
@@ -18,14 +20,15 @@ pub use verify_2fa::*;
 pub use verify_token::*;
  */
 
-pub fn generate_routes() -> Router {
+pub fn generate_routes(app_state: AppState) -> Router {
     // This function can be used to initialize or configure routes if needed in the future.
     let assets_dir = ServeDir::new("assets")
     .not_found_service(ServeFile::new("assets/index.html"));
     let router = Router::new()
-        .fallback_service(assets_dir)
         .route("/heartbeat", get(heartbeat_handler))
-        .route("/signup", post(signup));
+        .route("/signup", post(signup))
+        .fallback_service(assets_dir)
+        .with_state(app_state.into());
         //TODO: Add routes for login, logout, verify-2fa, and verify-token
     router
 }

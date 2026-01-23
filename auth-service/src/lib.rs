@@ -6,7 +6,10 @@ use tokio::net::TcpListener;
 
 pub mod routes;
 pub mod models;
+pub mod app_state;
+pub mod services;
 use routes::generate_routes;
+use app_state::AppState;
 
 #[derive(Debug)]
 pub struct Application {
@@ -15,10 +18,10 @@ pub struct Application {
 }
 
 impl Application {
-  pub async fn build(address: &str) -> Result<Self, Box<dyn Error + Send + Sync>> {
-    let router = generate_routes();
+  pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error + Send + Sync>> {
     let listener = tokio::net::TcpListener::bind(address).await?;
     let address = listener.local_addr()?.to_string();
+    let router = generate_routes(app_state);
     let server = axum::serve(listener, router);
     Ok(Self { server, address })
   }

@@ -2,7 +2,14 @@ use std::error::Error;
 
 use axum::{Router};
 use axum::serve::Serve;
+use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json
+};
+use models::error::AuthAPIError;
 
 pub mod routes;
 pub mod models;
@@ -34,6 +41,26 @@ impl Application {
 }
 
 
+#[derive(Serialize, Deserialize)]
+pub struct ErrorResponse {
+  pub error: String,
+}
+
+impl IntoResponse for AuthAPIError {
+  fn into_response(self) -> Response {
+    let (status, error_message) = match self {
+      AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "Usuário já existe".to_string()),
+      AuthAPIError::UserNotFound => (StatusCode::NOT_FOUND, "Usuário não encontrado".to_string()),
+      AuthAPIError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "Credenciais inválidas".to_string()),
+      AuthAPIError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+    };
+    let error_response = ErrorResponse {
+      error: error_message,
+    };
+    let body = Json(error_response);
+    (status, body).into_response()
+  }
+}
 
 
 

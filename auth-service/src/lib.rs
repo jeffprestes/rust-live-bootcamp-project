@@ -46,6 +46,11 @@ pub struct ErrorResponse {
   pub error: String,
 }
 
+#[derive(serde::Serialize, Deserialize)]
+pub struct SignupResponse {
+  message: String,
+}
+
 impl IntoResponse for AuthAPIError {
   fn into_response(self) -> Response {
     let (status, error_message) = match self {

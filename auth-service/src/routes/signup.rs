@@ -1,6 +1,6 @@
 use reqwest::StatusCode;
 use axum::{response::IntoResponse, extract::State, Json};
-use crate::{models::{signup::SignupRequest, user::User}, app_state::AppState, ErrorResponse};
+use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, signup::SignupRequest, user::User}};
 use std::sync::Arc;
 
 
@@ -28,18 +28,19 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
   } 
   
   let mut user_store = state.user_store.write().await;
-  if user_store.get_user(&checked_payload.email).is_ok() {
+
+  if user_store.get_user(&checked_payload.email).await.is_ok() {
     return (StatusCode::CONFLICT, Json(ErrorResponse { error: "Usuário já existe".to_string() })).into_response();
   }
 
   let user = User::new(checked_payload.email, checked_payload.password, checked_payload.requires_2_fa);
-  let resultado = user_store.add_user(user);
-  if resultado.is_err() {
-    eprintln!("routes::signup -> Erro ao adicionar usuário: {:?}", resultado.err());
+  let resultado = user_store.add_user(user).await;
+  if let Err(e) = resultado {
+    eprintln!("routes::signup -> Erro ao adicionar usuário: {:?}", e);
     return (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "Erro ao criar usuário".to_string() })).into_response();
   }
 
-  (StatusCode::CREATED, Json(ErrorResponse { error: "Usuário criado com sucesso".to_string() })).into_response()
+  (StatusCode::CREATED, Json(SignupResponse { message: "Usuário criado com sucesso".to_string() })).into_response()
 } 
 
 fn is_valid_password_credentials(payload: SignupRequest) -> (bool, SignupRequest) {

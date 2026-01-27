@@ -22,7 +22,7 @@ impl User {
 }
 
 fn hash_password(password: &str) -> String {
-    // Placeholder for password hashing logic
+    // TODO: hash the password properly
     format!("hashed_{}", password)
 }
 

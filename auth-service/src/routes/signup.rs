@@ -1,6 +1,6 @@
 use reqwest::StatusCode;
 use axum::{response::IntoResponse, extract::State, Json};
-use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, email::Email, signup::SignupRequest, user::User}};
+use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, password::Password, email::Email, signup::SignupRequest, user::User}};
 use std::sync::Arc;
 
 
@@ -12,12 +12,14 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: new_email_result.err().unwrap().to_string() })).into_response();
   }
   let new_email = new_email_result.unwrap();
+
   
-  
-  let is_valid = is_valid_password_credentials(payload.password.clone());
-  if !is_valid {
-    return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Senha inválida".to_string() })).into_response();
-  }
+  let password_obj = match Password::new(payload.password.clone()) {
+    Ok(password) => password,
+    Err(err) => {
+      return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: err.to_string() })).into_response();
+    }
+  };
   
   if payload.requires_2_fa {  
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "2FA não suportado".to_string() })).into_response();
@@ -28,19 +30,15 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
     return (StatusCode::CONFLICT, Json(ErrorResponse { error: "Usuário já existe".to_string() })).into_response();
   }
 
-  let user = User::new(new_email, payload.password.clone(), payload.requires_2_fa);
+  let user = User::new(new_email, password_obj.to_hash(), payload.requires_2_fa);
+  let user_for_debug = user.clone();
   let resultado = user_store.add_user(user).await;
   if let Err(e) = resultado {
     eprintln!("routes::signup -> Erro ao adicionar usuário: {:?}", e);
     return (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "Erro ao criar usuário".to_string() })).into_response();
   }
-
+  println!("routes::signup -> Payload Validado. Usuario criado: {:?}", user_for_debug);
   (StatusCode::CREATED, Json(SignupResponse { message: "Usuário criado com sucesso".to_string() })).into_response()
+
 } 
 
-fn is_valid_password_credentials(password: String) -> bool {
-  if password.len() < 8 {
-    return false;
-  }
-  true
-}

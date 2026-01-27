@@ -89,7 +89,7 @@ jobs:
       with:
         host: 138.197.95.239
         username: jeffprestes
-        password: 'xiboquinha'
+        password: xiboquinha
         script: |
           cd ~
           export AUTH_SERVICE_IP=138.197.95.239

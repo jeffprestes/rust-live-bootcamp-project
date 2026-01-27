@@ -1,16 +1,17 @@
 use uuid::Uuid;
+use crate::models::email::Email;
 
 #[derive(serde::Deserialize, Debug, PartialEq, Clone, Eq, Hash)]
 
 pub struct User {
     pub id: u64,
-    pub email: String,
+    pub email: Email,
     pub password_hash: String,
     pub requires_2_fa: bool,
 }
 
 impl User {
-    pub fn new(email: String, password: String, requires_2_fa: bool) -> Self {
+    pub fn new(email: Email, password: String, requires_2_fa: bool) -> Self {
         Self {
             id: generate_random_id(),
             email,

@@ -1,39 +1,41 @@
 use reqwest::StatusCode;
 use axum::{response::IntoResponse, extract::State, Json};
-use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, signup::SignupRequest, user::User}};
+use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, email::Email, signup::SignupRequest, user::User}};
 use std::sync::Arc;
 
 
 pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<SignupRequest>) -> impl IntoResponse {
   println!("routes::signup -> Payload Recebido para signup: {:?}", payload);
-  
-  let payload_for_check = SignupRequest {
-    email: payload.email.clone(),
-    password: payload.password.clone(),
-    requires_2_fa: payload.requires_2_fa,
+   
+  let new_email_result = Email::new(payload.email.clone());
+  if new_email_result.is_err() {
+    return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: new_email_result.err().unwrap().to_string() })).into_response();
+  }
+  let new_email = new_email_result.unwrap();
+
+  let mut is_valid = match Email::validate(&new_email.address) {
+    Ok(valid) => valid,
+    Err(_) => false,
   };
-  
-  let (mut is_valid, mut checked_payload) = is_valid_email_credentials(payload_for_check);
   if !is_valid {
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Formato de email inválido".to_string() })).into_response();
   }
   
-  (is_valid, checked_payload) = is_valid_password_credentials(checked_payload);
+  is_valid = is_valid_password_credentials(payload.password.clone());
   if !is_valid {
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Senha inválida".to_string() })).into_response();
   }
   
-  if checked_payload.requires_2_fa {  
+  if payload.requires_2_fa {  
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "2FA não suportado".to_string() })).into_response();
   } 
   
   let mut user_store = state.user_store.write().await;
-
-  if user_store.get_user(&checked_payload.email).await.is_ok() {
+  if user_store.get_user(&new_email.address).await.is_ok() {
     return (StatusCode::CONFLICT, Json(ErrorResponse { error: "Usuário já existe".to_string() })).into_response();
   }
 
-  let user = User::new(checked_payload.email, checked_payload.password, checked_payload.requires_2_fa);
+  let user = User::new(new_email, payload.password.clone(), payload.requires_2_fa);
   let resultado = user_store.add_user(user).await;
   if let Err(e) = resultado {
     eprintln!("routes::signup -> Erro ao adicionar usuário: {:?}", e);
@@ -43,25 +45,9 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
   (StatusCode::CREATED, Json(SignupResponse { message: "Usuário criado com sucesso".to_string() })).into_response()
 } 
 
-fn is_valid_password_credentials(payload: SignupRequest) -> (bool, SignupRequest) {
-  if payload.password.len() < 8 {
-    return (false, payload);
+fn is_valid_password_credentials(password: String) -> bool {
+  if password.len() < 8 {
+    return false;
   }
-  (true, payload)
-}
-
-fn is_valid_email_credentials(payload: SignupRequest) -> (bool, SignupRequest) {
-  if payload.email.is_empty() || payload.password.is_empty() {
-    return (false, payload);
-  }
-  if payload.email.len() < 5 || !payload.email.contains('@') {
-    return (false, payload);
-  }
-  if payload.email.len() > 254 {
-    return (false, payload);
-  }
-  if payload.email.chars().any(|c| !c.is_ascii()) {
-    return (false, payload);
-  }
-  (true, payload)
+  true
 }

@@ -21,10 +21,10 @@ impl HashMapUserStore {
 impl UserStore for HashMapUserStore {
 
   async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-    if self.users.contains_key(&user.email) {
+    if self.users.contains_key(&user.email.address) {
       return Err(UserStoreError::UserAlreadyExists);
     }
-    self.users.insert(user.email.clone(), user);
+    self.users.insert(user.email.address.clone(), user);
     Ok(())
   }
 
@@ -45,12 +45,15 @@ impl UserStore for HashMapUserStore {
 #[cfg(test)]
 mod tests {
 
-  use super::*;
+  use crate::models::email::Email;
+
+use super::*;
 
   #[tokio::test]
   async fn test_add_user() {
     let mut store = HashMapUserStore::new();
-    let user = User::new("test@example.com".to_string(), "password".to_string(), false);
+    let user_mail = Email::new("test@example.com".to_string()).unwrap();
+    let user = User::new(user_mail, "password".to_string(), false);
     let result = store.add_user(user.clone()).await;
     assert!(result.is_ok());
   }
@@ -58,20 +61,22 @@ mod tests {
   #[tokio::test]
   async fn test_get_user() {
     let mut store = HashMapUserStore::new();
-    let user = User::new("test@example.com".to_string(), "password".to_string(), false);
+    let user_mail = Email::new("test@example.com".to_string()).unwrap();
+    let user = User::new(user_mail, "password".to_string(), false);
     let result: Result<(), UserStoreError> = store.add_user(user.clone()).await;
     assert!(result.is_ok());
-    let retrieved_user: Result<&User, UserStoreError> = store.get_user(&user.email).await;
+    let retrieved_user: Result<&User, UserStoreError> = store.get_user(&user.email.address).await;
     assert_eq!(retrieved_user.unwrap(), &user);
   }
 
   #[tokio::test]
   async fn test_validate_user() {
     let mut store = HashMapUserStore::new();
-    let user = User::new("test@example.com".to_string(), "password".to_string(), false);
+    let user_mail = Email::new("test@example.com".to_string()).unwrap();
+    let user = User::new(user_mail, "password".to_string(), false);
     let result: Result<(), UserStoreError> = store.add_user(user.clone()).await;
     assert!(result.is_ok());
-    let retrieved_user: Result<&User, UserStoreError> = store.validate_user(&user.email, &user.password_hash).await;
+    let retrieved_user: Result<&User, UserStoreError> = store.validate_user(&user.email.address, &user.password_hash).await;
     assert_eq!(retrieved_user.unwrap().password_hash, user.password_hash);
   }
 }

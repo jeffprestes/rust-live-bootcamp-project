@@ -4,13 +4,11 @@ pub enum EmailError {
 }
 
 impl EmailError {
-    
     pub fn to_string(&self) -> String {
       match self {
         EmailError::InvalidEmail => "Formato de email inválido".to_string()
       }
     }
-
     pub fn to_str(&self) -> &str {
       match self {
         EmailError::InvalidEmail => "Formato de email inválido"
@@ -33,7 +31,7 @@ impl Email {
       if address.is_empty() {
         return Err(EmailError::InvalidEmail);
       }
-      if address.len() < 5 || !address.contains('@') {
+      if address.len() < 5 || !address.contains('@') || !address.contains('.') {
         return Err(EmailError::InvalidEmail);
       }
       if address.len() > 254 {
@@ -43,5 +41,11 @@ impl Email {
         return Err(EmailError::InvalidEmail);
       }
       Ok(true)  
+    }
+}
+
+impl AsRef<str> for Email {
+    fn as_ref(&self) -> &str {
+        &self.address
     }
 }

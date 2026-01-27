@@ -12,16 +12,9 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: new_email_result.err().unwrap().to_string() })).into_response();
   }
   let new_email = new_email_result.unwrap();
-
-  let mut is_valid = match Email::validate(&new_email.address) {
-    Ok(valid) => valid,
-    Err(_) => false,
-  };
-  if !is_valid {
-    return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Formato de email inválido".to_string() })).into_response();
-  }
   
-  is_valid = is_valid_password_credentials(payload.password.clone());
+  
+  let is_valid = is_valid_password_credentials(payload.password.clone());
   if !is_valid {
     return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Senha inválida".to_string() })).into_response();
   }
@@ -31,7 +24,7 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
   } 
   
   let mut user_store = state.user_store.write().await;
-  if user_store.get_user(&new_email.address).await.is_ok() {
+  if user_store.get_user(new_email.as_ref()).await.is_ok() {
     return (StatusCode::CONFLICT, Json(ErrorResponse { error: "Usuário já existe".to_string() })).into_response();
   }
 

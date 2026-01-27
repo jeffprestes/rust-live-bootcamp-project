@@ -88,8 +88,8 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: 138.197.95.239
-        username: jeffprestes
-        password: xiboquinha
+        username: "jeffprestes"
+        password: "xiboquinha"
         script: |
           cd ~
           export AUTH_SERVICE_IP=138.197.95.239

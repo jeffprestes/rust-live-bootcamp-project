@@ -27,6 +27,10 @@ impl Email {
       Ok(Self { address })
     }
 
+    pub fn validate_string(address: String) -> Result<bool, EmailError> {
+      Email::validate(&address)
+    }
+
     pub fn validate(address: &str) -> Result<bool, EmailError> {
       if address.is_empty() {
         return Err(EmailError::InvalidEmail);

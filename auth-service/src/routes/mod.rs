@@ -2,6 +2,7 @@ use axum::{Router, routing::{get, post}, response::Html};
 use tower_http::services::{ServeDir, ServeFile};
 
 pub(crate) mod signup;
+pub(crate) mod login;
 /* 
 mod login;
 mod logout;
@@ -11,10 +12,10 @@ mod verify_token;
 
 // re-export items from sub-modules
 pub use signup::signup;
+pub use login::login;
 
 use crate::app_state::AppState;
 /*
-pub use login::*;
 pub use logout::*;
 pub use verify_2fa::*;
 pub use verify_token::*;
@@ -27,9 +28,10 @@ pub fn generate_routes(app_state: AppState) -> Router {
     let router = Router::new()
         .route("/heartbeat", get(heartbeat_handler))
         .route("/signup", post(signup))
+        .route("/login", post(login))
         .fallback_service(assets_dir)
         .with_state(app_state.into());
-        //TODO: Add routes for login, logout, verify-2fa, and verify-token
+        //TODO: Add routes for logout, verify-2fa, and verify-token
     router
 }
 

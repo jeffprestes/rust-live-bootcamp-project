@@ -66,7 +66,7 @@ loginButton.addEventListener("click", (e) => {
             loginForm.email.value = "";
             loginForm.password.value = "";
             loginErrAlter.style.display = "none";
-            alert("You have successfully logged in.");
+            alert("Você fez login com sucesso.");
         } else {
             response.json().then(data => {
                 let error_msg = data.error;
@@ -104,7 +104,7 @@ signupButton.addEventListener("click", (e) => {
             signupForm.password.value = "";
             signupForm.twoFA.checked = false;
             signupErrAlter.style.display = "none";
-            alert("You have successfully created a user.");
+            alert("Seu usuário foi criado com sucesso. Por favor, faça login.");
             loginSection.style.display = "block";
             twoFASection.style.display = "none";
             signupSection.style.display = "none";
@@ -145,7 +145,7 @@ TwoFAButton.addEventListener("click", (e) => {
             TwoFAForm.email_code.value = "";
             TwoFAForm.login_attempt_id.value = "";
             TwoFAErrAlter.style.display = "none";
-            alert("You have successfully logged in.");
+            alert("Você fez login com sucesso.");
             loginSection.style.display = "block";
             twoFASection.style.display = "none";
             signupSection.style.display = "none";

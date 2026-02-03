@@ -1,5 +1,6 @@
 use crate::helpers::{get_random_email, TestApp};
 use serde::Deserialize;
+use auth_service::{utils::constants::JWT_COOKIE_NAME};
 
 #[derive(Deserialize)]
 pub struct ErrorResponse {
@@ -99,4 +100,11 @@ async fn should_return_200_login_success() {
   // First login attempt
   let response2 = app.post_login(body.clone()).await;
   assert_eq!(response2.status(), 200);
+
+  let auth_cookie = response2
+    .cookies()
+    .find(|c| c.name() == JWT_COOKIE_NAME)
+    .expect("Cookie de login não encontrado");
+  
+  assert!(!auth_cookie.value().is_empty(), "Valor do cookie de login está vazio");
 }

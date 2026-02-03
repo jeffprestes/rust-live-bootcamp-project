@@ -1,8 +1,11 @@
-use auth_service::Application;
+use auth_service::{Application, utils::constants::dev};
+use reqwest::cookie::Jar;
+use std::sync::Arc;
 
 pub struct TestApp {
   pub address: String,
   pub http_client: reqwest::Client,
+  pub cookie_jar: Arc<Jar>
 }
 
 impl TestApp {
@@ -14,7 +17,7 @@ impl TestApp {
 
     let app_state = auth_service::app_state::AppState::new(user_state);
 
-    let app = Application::build(app_state, "127.0.0.1:0")
+    let app = Application::build(app_state, dev::APP_ADDRESS)
     .await  
     .expect("Falha ao criar aplicação.");
 
@@ -24,11 +27,17 @@ impl TestApp {
     //evitar bloquear a tarefa principal de teste.
     #[allow(clippy::let_underscore_future)]
     let _ = tokio::spawn(app.run_until_stopped());
+
+    let cookie_jar = Arc::new(Jar::default());
+
     let http_client = reqwest::Client::builder()
       .redirect(reqwest::redirect::Policy::none())
+      .cookie_provider(cookie_jar.clone())
       .build()
       .expect("Falha ao criar cliente HTTP.");
-    Self { address, http_client }
+
+    Self { address, http_client, cookie_jar }
+  
   }
 
   pub async fn get_root(&self) -> reqwest::Response {
@@ -54,9 +63,17 @@ impl TestApp {
       .json(&body)
       .send()
       .await
-      .expect("Falha ao executar requisição POST para /.")
+      .expect("Falha ao executar requisição POST para /login.")
   }
-  // TODO: Implement helper functions for all other routes (signup, login, logout, verify-2fa, and verify-token)
+
+  pub async fn post_logout(&self) -> reqwest::Response {
+    self.http_client
+      .post(&format!("{}/logout", &self.address))
+      .send()
+      .await
+      .expect("Falha ao executar requisição POST para /logout.")
+  }
+  // TODO: Implement helper functions for all other routes (verify-2fa, and verify-token)
 }  
 
 pub fn get_random_email() -> String {

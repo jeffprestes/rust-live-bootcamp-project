@@ -3,4 +3,7 @@ pub enum AuthAPIError {
     UserNotFound,
     InvalidCredentials,
     InternalError(String),
+    MissingToken,
+    InvalidToken,
+    ExpiredToken,
 }

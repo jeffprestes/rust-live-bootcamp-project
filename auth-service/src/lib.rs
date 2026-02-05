@@ -32,6 +32,7 @@ impl Application {
 
     let allowed_origins = [
       "http://localhost:3000".parse()?,
+      "http://localhost:8000".parse()?,
       "http://138.197.95.239:3000".parse()?,
     ];
 

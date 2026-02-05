@@ -8,7 +8,7 @@ logoutLink.addEventListener("click", (e) => {
     let url = logoutLink.href;
 
     fetch(url, {
-        method: 'POST',
+        method: 'GET',
         credentials: 'include', // This will include cookies in the request
     }).then(response => {
         if (response.ok) {
@@ -22,7 +22,10 @@ logoutLink.addEventListener("click", (e) => {
 });
 
 (() => {
-    fetch('/protected').then(response => {
+    fetch('/protected', {
+        method: 'GET',
+        credentials: 'include', // This will include cookies in the request
+    }).then(response => {
         if (response.ok) {
             loginLink.style.display = "none";
             logoutLink.style.display = "block";

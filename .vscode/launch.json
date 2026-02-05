@@ -1,0 +1,51 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug auth-service",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": [
+          "run",
+          "--manifest-path",
+          "${workspaceFolder}/auth-service/Cargo.toml",
+          "-p",
+          "auth-service"
+        ],
+        "filter": {
+          "name": "auth-service",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "JWT_SECRET": "minha_chave_secreta_super_secreta"
+      }
+    },
+    {
+      "name": "Debug app-service",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": [
+          "run",
+          "--manifest-path",
+          "${workspaceFolder}/app-service/Cargo.toml",
+          "-p",
+          "app-service"
+        ],
+        "filter": {
+          "name": "app-service",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

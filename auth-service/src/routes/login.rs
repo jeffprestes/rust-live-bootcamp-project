@@ -9,7 +9,7 @@ use crate::{
   ErrorResponse, 
   SignupResponse, 
   app_state::AppState, 
-  utils::auth::generate_auth_token,
+  utils::auth::generate_auth_token_wrap_into_cookie,
   models::{
     data_store::UserStore as _, 
     email::Email, 
@@ -19,7 +19,6 @@ use crate::{
 };
 use std::sync::Arc;
 
-// ...existing code...
 pub async fn login(
     State(state): State<Arc<AppState>>, 
     jar: CookieJar,
@@ -54,7 +53,7 @@ pub async fn login(
     }
   };
 
-  let auth_cookie = match generate_auth_token(&email) {
+  let auth_cookie = match generate_auth_token_wrap_into_cookie(&email) {
     Ok(cookie) => cookie,
     Err(err) => {
       return (jar, (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: format!("Erro ao gerar token de autenticação: {}", err.to_string()) }))).into_response();

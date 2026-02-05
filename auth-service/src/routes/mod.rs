@@ -5,6 +5,7 @@ use std::sync::Arc;
 pub(crate) mod signup;
 pub(crate) mod login;
 pub(crate) mod logout;
+pub mod verify_token;
 /* 
 mod verify_2fa;
 mod verify_token;
@@ -14,11 +15,11 @@ mod verify_token;
 pub use signup::signup;
 pub use login::login;
 pub use logout::logout;
+pub use verify_token::*;
 
 use crate::app_state::AppState;
 /*
 pub use verify_2fa::*;
-pub use verify_token::*;
  */
 
 pub fn generate_routes(app_state: AppState, cors: CorsLayer) -> Router {
@@ -32,6 +33,7 @@ pub fn generate_routes(app_state: AppState, cors: CorsLayer) -> Router {
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/logout", get(logout))
+        .route("/verify-token", post(verify_token))
         .fallback_service(assets_dir)
         .layer(cors)
         .with_state(app_state);

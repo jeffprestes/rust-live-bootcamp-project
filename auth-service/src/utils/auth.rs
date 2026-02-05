@@ -27,9 +27,9 @@ pub struct Claims {
   exp: usize,
 }
 
-pub fn generate_auth_token(email: &Email) -> Result<Cookie<'static>, GenerateTokenError> {
-  let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS)
-    .ok_or(GenerateTokenError::UnexpectedError)?;
+pub fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
+
+  let delta = chrono::Duration::seconds(TOKEN_TTL_SECONDS);
 
   let expiration = Utc::now()
     .checked_add_signed(delta)
@@ -50,6 +50,14 @@ pub fn generate_auth_token(email: &Email) -> Result<Cookie<'static>, GenerateTok
     &claims,
     &EncodingKey::from_secret(JWT_SECRET.as_ref()),
   ).map_err(GenerateTokenError::TokenError)?;
+
+ Ok(token)
+}
+
+
+pub fn generate_auth_token_wrap_into_cookie(email: &Email) -> Result<Cookie<'static>, GenerateTokenError> {
+
+  let token = generate_auth_token(email)?;
 
   let cookie = create_auth_cookie(token);
 
@@ -101,7 +109,7 @@ mod tests {
       address: "teste@example.com".to_string(),
     };
 
-    let cookie = generate_auth_token(&email).unwrap();
+    let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
     assert_eq!(cookie.name(), JWT_COOKIE_NAME);
     assert_eq!(cookie.value().len() > 0, true);
     assert_eq!(cookie.value().split('.').count() == 3, true);
@@ -126,7 +134,7 @@ mod tests {
       address: "teste@example.com".to_string(),
     };
 
-    let cookie = generate_auth_token(&email).unwrap();
+    let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
     assert_eq!(cookie.name(), JWT_COOKIE_NAME);
     assert_eq!(cookie.value().len() > 0, true);
     assert_eq!(cookie.value().split('.').count() == 3, true);
@@ -140,7 +148,7 @@ mod tests {
       address: "teste@example.com".to_string(),
     };
 
-    let cookie = generate_auth_token(&email).unwrap();
+    let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
     let resultado = validate_token(cookie.value()).await;
     assert!(resultado.is_ok());
 
@@ -148,7 +156,7 @@ mod tests {
     assert_eq!(claims.sub, email.address);
 
     let experiracao = Utc::now()
-    .checked_add_signed(chrono::Duration::try_minutes(9).expect("valid duration"))
+    .checked_add_signed(chrono::Duration::minutes(9))
     .expect("valid timestamp")
     .timestamp();
 

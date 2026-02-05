@@ -73,7 +73,16 @@ impl TestApp {
       .await
       .expect("Falha ao executar requisição POST para /logout.")
   }
-  // TODO: Implement helper functions for all other routes (verify-2fa, and verify-token)
+
+  pub async fn post_verify_token<Body>(&self, body: Body) -> reqwest::Response where Body: serde::Serialize {
+    self.http_client
+      .post(&format!("{}/verify-token", &self.address))
+      .json(&body)
+      .send()
+      .await
+      .expect("Falha ao executar requisição POST para /verify-token.")
+  }
+  // TODO: Implement helper functions for all other routes (verify-2fa)
 }  
 
 pub fn get_random_email() -> String {

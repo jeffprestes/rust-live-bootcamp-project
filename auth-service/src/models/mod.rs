@@ -5,3 +5,4 @@ pub mod data_store;
 pub mod email;
 pub mod password;
 pub mod login;
+pub mod verify_token;

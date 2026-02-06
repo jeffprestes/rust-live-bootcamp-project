@@ -7,7 +7,11 @@ async fn main() {
         auth_service::services::hashmap_user_store::HashMapUserStore::new(),
     ));
 
-    let app_state = auth_service::app_state::AppState::new(user_store);
+    let banned_token_store = std::sync::Arc::new(tokio::sync::RwLock::new(
+        auth_service::services::hashmap_banned_token_store::HashsetBannedTokenStore::new(),
+    ));
+
+    let app_state = auth_service::app_state::AppState::new(user_store, banned_token_store);
 
     let app = Application::build(app_state, prod::APP_ADDRESS)
     .await

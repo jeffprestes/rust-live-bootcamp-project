@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub async fn verify_token(
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
     _jar: CookieJar,
     Json(request): Json<VerifyTokenRequest>,
 ) -> impl IntoResponse {
@@ -28,7 +28,7 @@ pub async fn verify_token(
   }
 
   // Validate token signature and expiration.
-  let validation = validate_token(token).await;
+  let validation = validate_token(&state, token).await;
 
   if let Err(err) = validation {
     eprintln!("routes::verify_token -> Token inválido: {:?}", err);

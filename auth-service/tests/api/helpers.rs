@@ -1,23 +1,30 @@
 use auth_service::{Application, utils::constants::dev};
 use reqwest::cookie::Jar;
 use std::sync::Arc;
+use auth_service::services::*;
+use auth_service::app_state::AppState;
 
 pub struct TestApp {
   pub address: String,
   pub http_client: reqwest::Client,
-  pub cookie_jar: Arc<Jar>
+  pub cookie_jar: Arc<Jar>,
+  pub app_state: auth_service::app_state::AppState,
 }
 
 impl TestApp {
   pub async fn new() -> Self {
 
-    let user_state = std::sync::Arc::new(tokio::sync::RwLock::new(
-      auth_service::services::hashmap_user_store::HashMapUserStore::new(),
+    let user_state = Arc::new(tokio::sync::RwLock::new(
+      hashmap_user_store::HashMapUserStore::new(),
     ));
 
-    let app_state = auth_service::app_state::AppState::new(user_state);
+    let banned_token_store = Arc::new(tokio::sync::RwLock::new(
+      hashmap_banned_token_store::HashsetBannedTokenStore::new(),
+    ));
 
-    let app = Application::build(app_state, dev::APP_ADDRESS)
+    let app_state = auth_service::app_state::AppState::new(user_state, banned_token_store);
+
+    let app = Application::build(app_state.clone(), dev::APP_ADDRESS)
     .await  
     .expect("Falha ao criar aplicação.");
 
@@ -36,8 +43,12 @@ impl TestApp {
       .build()
       .expect("Falha ao criar cliente HTTP.");
 
-    Self { address, http_client, cookie_jar }
+    Self { address, http_client, cookie_jar, app_state }
   
+  }
+
+  pub async fn app_state(&self) -> &AppState  {
+    &self.app_state
   }
 
   pub async fn get_root(&self) -> reqwest::Response {

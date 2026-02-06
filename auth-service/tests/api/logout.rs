@@ -1,4 +1,4 @@
-use auth_service::utils::constants::JWT_COOKIE_NAME;
+use auth_service::{models::data_store::BannedTokenStore, utils::constants::JWT_COOKIE_NAME};
 use reqwest::Url;
 
 use crate::helpers::TestApp;
@@ -63,9 +63,24 @@ async fn should_return_200_if_valid_jwt_cookie() {
   assert_eq!(response2.cookies().count()>0, true);
   assert_eq!(response2.status(), 200);
 
+  let mut token: String = String::new();
+
+  response2.cookies().for_each(|cookie| {
+    println!("Cookie Name: {}, Cookie Value: {}", cookie.name(), cookie.value());
+    if cookie.name() == JWT_COOKIE_NAME {
+      token = cookie.value().to_string();      
+    }
+  });
+
   let response3 = app.post_logout().await;
   assert_eq!(response3.status().as_u16(), 200);
   assert_eq!(response3.cookies().count()>0, true);
+  let is_banned = app.app_state().await
+    .banned_token_store
+    .read()
+    .await
+    .is_token_banned(&token);
+  assert_eq!(is_banned, true);
 
 }
 

@@ -3,7 +3,9 @@ use chrono::Utc;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
-use crate::{models::email::Email, utils::constants::{JWT_SECRET, JWT_COOKIE_NAME}};
+use crate::{app_state::AppState, models::email::Email, utils::constants::{JWT_COOKIE_NAME, JWT_SECRET}};
+use crate::models::data_store::BannedTokenStore;
+
 pub const TOKEN_TTL_SECONDS: i64 = 600; // 24 horas
 
 #[derive(Debug)]
@@ -76,17 +78,31 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
   cookie
 }
 
-pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
   use jsonwebtoken::{decode, DecodingKey, Validation};
 
-  let token_data = decode::<Claims>(
+  decode::<Claims>(
     token,
     &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
     &Validation::default(),
   )
-  .map(|data| data.claims)?;
+  .map(|data| data.claims)
+}
+
+pub async fn validate_token(app_state: &AppState, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+  let token_data = decode_token(token)?;
+
+  if app_state.banned_token_store.read().await.is_token_banned(token) {
+    return Err(jsonwebtoken::errors::Error::from(
+      jsonwebtoken::errors::ErrorKind::InvalidToken,
+    ));
+  }
 
   Ok(token_data)
+}
+
+pub async fn validate_token_without_state(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+  decode_token(token)
 }
 
 pub fn create_token(claims: &Claims) -> Result<String, jsonwebtoken::errors::Error> {
@@ -149,7 +165,7 @@ mod tests {
     };
 
     let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
-    let resultado = validate_token(cookie.value()).await;
+    let resultado = validate_token_without_state(cookie.value()).await;
     assert!(resultado.is_ok());
 
     let claims = resultado.unwrap();
@@ -166,7 +182,7 @@ mod tests {
   #[tokio::test]
   async fn test_validate_token_with_invalid_token() {
     let invalid_token = "token_invalido";
-    let resultado = validate_token(invalid_token).await;
+    let resultado = validate_token_without_state(invalid_token).await;
     assert!(resultado.is_err());
   }
 

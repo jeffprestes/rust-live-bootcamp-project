@@ -21,10 +21,6 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
     }
   };
   
-  if payload.requires_2_fa {  
-    return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "2FA não suportado".to_string() })).into_response();
-  } 
-  
   let mut user_store = state.user_store.write().await;
   if user_store.get_user(new_email.as_ref()).await.is_ok() {
     return (StatusCode::CONFLICT, Json(ErrorResponse { error: "Usuário já existe".to_string() })).into_response();

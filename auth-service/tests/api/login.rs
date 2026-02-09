@@ -108,3 +108,20 @@ async fn should_return_200_login_success() {
   
   assert!(!auth_cookie.value().is_empty(), "Valor do cookie de login está vazio");
 }
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+  let app = TestApp::new().await; 
+  let body = serde_json::json!({
+    "email": "teste@email.com",
+    "password": "password",
+    "requires2FA": true
+  });
+  // First signup attempt
+  let response1 = app.post_signup(body.clone()).await;
+  assert_eq!(response1.status().as_u16(), 201, "Usuário criado com sucesso");
+  // Second signup attempt with the same email
+  // First login attempt
+  let response2 = app.post_login(body.clone()).await;
+  assert_eq!(response2.status().as_u16(), 206);
+}

@@ -16,7 +16,8 @@ impl EmailError {
     }
 }
 
-#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[serde(transparent)]
 pub struct Email {
     pub address: String,
 }

@@ -138,7 +138,7 @@ TwoFAButton.addEventListener("click", (e) => {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, loginAttemptId, "2FACode": TwoFACode }),
+        body: JSON.stringify({ email, login_attempt_id: loginAttemptId, "2FACode": TwoFACode }),
     }).then(response => {
         if (response.ok) {
             TwoFAForm.email.value = "";

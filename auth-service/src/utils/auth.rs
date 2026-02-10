@@ -78,7 +78,7 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
   cookie
 }
 
-fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+pub fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
   use jsonwebtoken::{decode, DecodingKey, Validation};
 
   decode::<Claims>(

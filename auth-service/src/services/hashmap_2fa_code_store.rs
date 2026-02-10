@@ -4,7 +4,7 @@ use crate::models::email::Email;
 
 #[derive(Debug, Default)]
 pub struct HashMapTwoFACodeStore {
-  codes: HashMap<LoginAttemptId, (Email, TwoFACode)>,
+  pub codes: HashMap<LoginAttemptId, (Email, TwoFACode)>,
 }
 
 #[async_trait::async_trait]
@@ -16,12 +16,7 @@ impl TwoFACodeStore for HashMapTwoFACodeStore {
     }
   }
 
-  async fn add_code(
-    &mut self, 
-    email: Email, 
-    login_attempt_id: LoginAttemptId,
-    code: TwoFACode, 
-  ) -> Result<(), TwoFACodeStoreError> {
+  async fn add_code(&mut self, email: Email, login_attempt_id: LoginAttemptId, code: TwoFACode) -> Result<(), TwoFACodeStoreError> {
     if self.codes.contains_key(&login_attempt_id) {
       return Err(TwoFACodeStoreError::CodeAlreadyExists);
     }
@@ -30,17 +25,22 @@ impl TwoFACodeStore for HashMapTwoFACodeStore {
   }
 
   async fn validate_code(
-    &mut self, 
+    &self, 
     login_attempt_id: &LoginAttemptId, 
     code: &TwoFACode
   ) -> Result<Email, TwoFACodeStoreError> {
-    match self.codes.remove(login_attempt_id) {
-      Some((email, stored_code)) if stored_code == *code => Ok(email),
-      Some((email, stored_code)) => {
-        self.codes.insert(login_attempt_id.clone(), (email, stored_code));
-        Err(TwoFACodeStoreError::InvalidCode)
-      }
+    match self.codes.get(login_attempt_id) {
+      Some((email, stored_code)) if stored_code == code => Ok(email.clone()),
+      Some((_email, _stored_code)) => Err(TwoFACodeStoreError::NotFoundCode),
       None => Err(TwoFACodeStoreError::InvalidCode),
+    }
+  }
+
+  async fn remove_code(&mut self, login_attempt_id: &LoginAttemptId) -> Result<(), TwoFACodeStoreError> {
+    if self.codes.remove(login_attempt_id).is_some() {
+      Ok(())
+    } else {
+      Err(TwoFACodeStoreError::NotFoundCode)
     }
   }
 }
@@ -62,8 +62,9 @@ mod tests {
 
     let invalid_code = TwoFACode::parse("654321".to_string()).unwrap();
     let result_invalid = store.validate_code(&login_attempt_id, &invalid_code).await;
-    assert_eq!(result_invalid.err().unwrap(), TwoFACodeStoreError::InvalidCode);
-
+    assert_eq!(result_invalid.err().unwrap(), TwoFACodeStoreError::NotFoundCode);
+    
+    store.remove_code(&login_attempt_id).await.unwrap();
     let result_nonexistent = store.validate_code(&login_attempt_id, &code).await;
     assert_eq!(result_nonexistent.err().unwrap(), TwoFACodeStoreError::InvalidCode);
   } 

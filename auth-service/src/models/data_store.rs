@@ -10,7 +10,9 @@ pub enum UserStoreError {
 pub enum TwoFACodeStoreError {
   CodeAlreadyExists,
   InvalidCode,
+  NotFoundCode,
   UnexpectedError,
+  ExpiredCode
 }
 
 use crate::models::email::Email;
@@ -40,13 +42,16 @@ pub trait TwoFACodeStore {
     code: TwoFACode, 
   ) -> Result<(), TwoFACodeStoreError>;
   async fn validate_code(
-    &mut self, 
+    &self, 
     login_attempt_id: &LoginAttemptId, 
     code: &TwoFACode
   ) -> Result<Email, TwoFACodeStoreError>;
+  async fn remove_code(&mut self, login_attempt_id: &LoginAttemptId) -> Result<(), TwoFACodeStoreError>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(transparent)]
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {

@@ -7,3 +7,4 @@ pub mod password;
 pub mod login;
 pub mod verify_token;
 pub mod email_client;
+pub mod verify_2fa;

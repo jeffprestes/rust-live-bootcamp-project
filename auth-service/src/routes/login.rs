@@ -5,40 +5,54 @@ use axum::{
   response::IntoResponse
 };
 use axum_extra::extract::CookieJar;
-use serde::{Deserialize, Serialize};
 use crate::{
-  ErrorResponse, app_state::AppState, models::{
-    data_store::UserStore as _, email::Email, error::AuthAPIError, login::LoginRequest, password::Password
-  }, utils::auth::generate_auth_token_wrap_into_cookie
+  ErrorResponse, app_state::AppState, 
+  models::{
+    data_store::UserStore as _, 
+    data_store::{TwoFACodeStore, LoginAttemptId, TwoFACode},
+    email::Email,
+    error::AuthAPIError, 
+    login::{LoginRequest, LoginResponse, TwoFactorAuthResponse}, 
+    password::Password
+  }, 
+  utils::auth::generate_auth_token_wrap_into_cookie
 };
 use std::sync::Arc;
+use rand::Rng;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TwoFactorAuthResponse {
-  pub message: String,
-  #[serde(rename = "loginAttemptId")]
-  pub login_attempt_id: String,
-}
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum LoginResponse {
-  RegularAuth,
-  TwoFactorAuth(TwoFactorAuthResponse),
-}
-
-async fn handle_2fa(jar: CookieJar)
+async fn handle_2fa(jar: CookieJar, email: &Email, state: &AppState)
 -> (CookieJar, Result<(StatusCode, Json<LoginResponse>), AuthAPIError>) {
-  (
-    jar,
-    Ok((
-      StatusCode::PARTIAL_CONTENT,
-      Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
-        message: "2FA é necessária para este usuário. Por favor, verifique seu dispositivo de autenticação.".to_string(),
-        login_attempt_id: uuid::Uuid::new_v4().to_string(),
-      })),
-    )),
-  )
+
+  let login_attempt_id = LoginAttemptId::parse(uuid::Uuid::new_v4().to_string()).unwrap();
+  let two_fa_code = TwoFACode::parse(format!("{:06}", rand::rng().random_range(0..=999999))).unwrap();
+  let mut two_fa_code_store = state.two_fa_code_store.write().await;
+  match two_fa_code_store.add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone()).await {
+    Ok(_) => (),
+    Err(err) => {
+      return (jar, Err(AuthAPIError::InternalError(format!("Erro ao armazenar código 2FA: {err:?}"))));
+    }
+  };
+
+  let msg_body_content = format!("Seu código de autenticação de dois fatores é: {}", two_fa_code.as_ref());
+  let msg_body_content_str = msg_body_content.as_str();
+  match state.email_client.send_email(
+    &email, 
+    "Código de Autenticação de Dois Fatores", 
+    msg_body_content_str
+  ).await {
+    Ok(_) => (),
+    Err(err) => {
+      return (jar, Err(AuthAPIError::InternalError(format!("Erro ao enviar email com código 2FA: {err:?}"))));
+    }
+  };
+
+  let json_body = TwoFactorAuthResponse {
+    message: "2FA é necessária para este usuário. Por favor, verifique seu dispositivo de autenticação.".to_string(),
+    login_attempt_id: login_attempt_id.as_ref().to_string(),
+  };
+
+  (jar, Ok((StatusCode::PARTIAL_CONTENT, Json(LoginResponse::TwoFactorAuthRequired(json_body)))))
 }
 
 async fn handle_no_2fa(email: &Email, jar: CookieJar) 
@@ -94,7 +108,7 @@ pub async fn login(
   };
 
   if user.requires_2_fa {
-    let (jar, result) = handle_2fa(jar).await;
+    let (jar, result) = handle_2fa(jar, &email, &state).await;
     return match result {
       Ok((status, body)) => (jar, (status, body)).into_response(),
       Err(err) => (jar, (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: err.to_string() }))).into_response(),

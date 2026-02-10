@@ -1,3 +1,4 @@
+use auth_service::models::data_store::TwoFACodeStore;
 use auth_service::{Application, utils::constants::dev};
 use reqwest::cookie::Jar;
 use std::sync::Arc;
@@ -22,7 +23,13 @@ impl TestApp {
       hashmap_banned_token_store::HashsetBannedTokenStore::new(),
     ));
 
-    let app_state = auth_service::app_state::AppState::new(user_state, banned_token_store);
+    let two_fa_code_store = Arc::new(tokio::sync::RwLock::new(
+      hashmap_2fa_code_store::HashMapTwoFACodeStore::new().await,
+    ));
+
+    let email_client = Arc::new(email_client::MockEmailClient {});
+
+    let app_state = auth_service::app_state::AppState::new(user_state, banned_token_store, two_fa_code_store, email_client);
 
     let app = Application::build(app_state.clone(), dev::APP_ADDRESS)
     .await  

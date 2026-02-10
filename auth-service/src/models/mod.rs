@@ -6,3 +6,4 @@ pub mod email;
 pub mod password;
 pub mod login;
 pub mod verify_token;
+pub mod email_client;

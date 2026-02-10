@@ -1,6 +1,7 @@
 use crate::helpers::{get_random_email, TestApp};
 use serde::Deserialize;
 use auth_service::{utils::constants::JWT_COOKIE_NAME};
+use auth_service::models::login::TwoFactorAuthResponse;
 
 #[derive(Deserialize)]
 pub struct ErrorResponse {
@@ -32,29 +33,6 @@ async fn should_return_422_if_malformed_input() {
   }
   
 }
-
-// #[tokio::test]
-// async fn should_return_401_if_invalid_credentials() {
-//   let app = TestApp::new().await; 
-//   let test_cases = vec![
-//     // Invalid email format
-//     serde_json::json!({
-//       "email": "invalidemailformat@teste.com",
-//       "password": "validpassword123",
-//       "requires2FA": false
-//     }),
-//     serde_json::json!({
-//       "email": get_random_email(),
-//       "password": "short789456",
-//       "requires2FA": false
-//     }),
-//   ];
-//   for body in test_cases {
-//     let response = app.post_login(body.clone()).await;
-//     assert_eq!(response.status().as_u16(), 401, "Falha para o payload: {}", body);
-//   }
-// }
-
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
@@ -124,4 +102,10 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
   // First login attempt
   let response2 = app.post_login(body.clone()).await;
   assert_eq!(response2.status().as_u16(), 206);
+
+  let json_body = response2.json::<TwoFactorAuthResponse>()
+    .await
+    .expect("Falha ao desserializar resposta de 2FA");
+
+  assert_eq!(json_body.message, "2FA é necessária para este usuário. Por favor, verifique seu dispositivo de autenticação.");
 }

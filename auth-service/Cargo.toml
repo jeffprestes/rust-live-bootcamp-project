@@ -21,3 +21,6 @@ quickcheck_macros = "1.1.0"
 axum-extra = { version = "0.10.0", features = ["cookie"] }
 jsonwebtoken = { version = "10.2.0", default-features = false, features = ["rust_crypto"] }
 chrono = "0.4.42"
+sqlx = { version = "0.8.6", features = [ "runtime-tokio-rustls", "postgres", "migrate"] }
+dotenvy = "0.15.7"
+argon2 = { version = "0.5.3", features = ["std"] }

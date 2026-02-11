@@ -1,0 +1,1 @@
+// placeholder for database connection and configuration code, to be implemented in the next steps of the project

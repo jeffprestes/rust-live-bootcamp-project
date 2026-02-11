@@ -1,12 +1,14 @@
+use std::hash::Hash;
+
 use uuid::Uuid;
-use crate::models::email::Email;
+use crate::models::{email::Email, password::HashedPassword};
 
 #[derive(serde::Deserialize, Debug, PartialEq, Clone, Eq, Hash)]
 
 pub struct User {
     pub id: u64,
     pub email: Email,
-    pub password_hash: String,
+    pub password: HashedPassword,
     pub requires_2_fa: bool,
 }
 
@@ -15,15 +17,10 @@ impl User {
         Self {
             id: generate_random_id(),
             email,
-            password_hash: hash_password(&password),
+            password: HashedPassword::new(password).unwrap(),
             requires_2_fa,
         }
     }
-}
-
-fn hash_password(password: &str) -> String {
-    // TODO: hash the password properly
-    format!("hashed_{}", password)
 }
 
 fn generate_random_id() -> u64 {

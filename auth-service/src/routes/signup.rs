@@ -1,6 +1,6 @@
 use reqwest::StatusCode;
 use axum::{response::IntoResponse, extract::State, Json};
-use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, password::Password, email::Email, signup::SignupRequest, user::User}};
+use crate::{ErrorResponse, SignupResponse, app_state::AppState, models::{data_store::UserStore as _, password::HashedPassword, email::Email, signup::SignupRequest, user::User}};
 use std::sync::Arc;
 
 
@@ -14,7 +14,7 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
   let new_email = new_email_result.unwrap();
 
   
-  let password_obj = match Password::new(payload.password.clone()) {
+  let password_obj = match HashedPassword::new(payload.password.clone()) {
     Ok(password) => password,
     Err(err) => {
       return (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: err.to_string() })).into_response();

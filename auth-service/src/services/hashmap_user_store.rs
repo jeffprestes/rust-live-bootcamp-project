@@ -32,20 +32,18 @@ impl UserStore for HashMapUserStore {
     self.users.get(email).ok_or(UserStoreError::UserNotFound)
   }
 
-  async fn validate_user(&self, email: &str, password: &str) -> Result<&User, UserStoreError> {
+  async fn validate_user(&self, email: &str, raw_password: &str) -> Result<&User, UserStoreError> {
     let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
-    if user.password_hash == password {
-      Ok(user)
-    } else {
-      Err(UserStoreError::InvalidCredentials)
-    }
+    user.password.verify_raw_password(raw_password).await.map_err(|_| UserStoreError::InvalidCredentials)?;
+    Ok(user)
   }
 }
 
 #[cfg(test)]
 mod tests {
 
-  use crate::models::email::Email;
+use crate::models::email::Email;
+use crate::models::password::HashedPassword;
 
 use super::*;
 
@@ -73,10 +71,21 @@ use super::*;
   async fn test_validate_user() {
     let mut store = HashMapUserStore::new();
     let user_mail = Email::new("test@example.com".to_string()).unwrap();
-    let user = User::new(user_mail, "password".to_string(), false);
+    let password = "password".to_string();
+    let password_hash = HashedPassword::compute_password_hash(&password)
+      .await
+      .expect("Failed to hash password");
+    let hashed_password = HashedPassword::parse_password_hash(password_hash)
+      .expect("Failed to parse password hash");
+    let user = User {
+      id: 1,
+      email: user_mail,
+      password: hashed_password,
+      requires_2_fa: false,
+    };
     let result: Result<(), UserStoreError> = store.add_user(user.clone()).await;
     assert!(result.is_ok());
-    let retrieved_user: Result<&User, UserStoreError> = store.validate_user(&user.email.address, &user.password_hash).await;
-    assert_eq!(retrieved_user.unwrap().password_hash, user.password_hash);
+    let retrieved_user: Result<&User, UserStoreError> = store.validate_user(&user.email.address, &password).await;
+    assert_eq!(retrieved_user.unwrap().password.as_ref(), user.password.as_ref());
   }
 }

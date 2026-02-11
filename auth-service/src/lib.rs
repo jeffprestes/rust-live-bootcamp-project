@@ -4,6 +4,8 @@ use axum::{Router};
 use axum::serve::Serve;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 use axum::{
     http::{header::{AUTHORIZATION, CONTENT_TYPE}, StatusCode},
@@ -86,6 +88,16 @@ impl IntoResponse for AuthAPIError {
   }
 }
 
+pub async fn get_postgres_pool(database_url: &str) -> Result<sqlx::PgPool, sqlx::Error> {
+  PgPoolOptions::new()
+    .max_connections(5);
+  let pool = sqlx::PgPool::connect(database_url).await?;
+  Ok(pool)
+}
 
-
-//TODO: Implement handlers for login, logout, verify-2fa, and verify-token
+pub async fn configure_postgres() -> PgPool {
+  let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+  let pg_pool = get_postgres_pool(&database_url).await.expect("Failed to connect to PostgreSQL");
+  sqlx::migrate!("./migrations").run(&pg_pool).await.expect("Failed to run migrations");
+  pg_pool
+}

@@ -13,7 +13,7 @@ use crate::{
     email::Email,
     error::AuthAPIError, 
     login::{LoginRequest, LoginResponse, TwoFactorAuthResponse}, 
-    password::Password
+    password::HashedPassword,
   }, 
   utils::auth::generate_auth_token_wrap_into_cookie
 };
@@ -84,7 +84,7 @@ pub async fn login(
     }
   };
   
-  match Password::validate(request.password.clone().as_str()) {
+  match HashedPassword::validate(request.password.clone().as_str()) {
     Ok(_) => (),
     Err(err) => {
       return (jar, (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: err.to_string() }))).into_response();

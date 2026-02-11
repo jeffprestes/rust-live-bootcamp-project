@@ -1,7 +1,12 @@
 use auth_service::{Application, services::email_client::MockEmailClient, utils::constants::prod};
 
 #[tokio::main]
+#[warn(unused_variables)]
 async fn main() {
+
+    dotenvy::dotenv().ok();
+
+    let _pg_pool = auth_service::configure_postgres().await;
 
     let user_store = std::sync::Arc::new(tokio::sync::RwLock::new(
         auth_service::services::hashmap_user_store::HashMapUserStore::new(),

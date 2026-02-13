@@ -5,6 +5,7 @@ mod root;
 mod signup;
 mod verify_2fa;
 mod verify_token;
+mod cleanup;
 
 use crate::helpers::TestApp;
 

@@ -1,4 +1,4 @@
-use crate::helpers::TestApp;
+use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -14,9 +14,10 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
 
   let body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "login_attempt_id": uuid::Uuid::new_v4().to_string(),
     "2FACode": "123"
   });
@@ -27,9 +28,10 @@ async fn should_return_400_if_invalid_input() {
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
 
   let signup_body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "password": "password123",
     "requires2FA": true
   });
@@ -37,7 +39,7 @@ async fn should_return_401_if_incorrect_credentials() {
   assert_eq!(response.status().as_u16(), 201);
 
   let body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "login_attempt_id": uuid::Uuid::new_v4().to_string(),
     "2FACode": "123456"
   });
@@ -48,9 +50,10 @@ async fn should_return_401_if_incorrect_credentials() {
 #[tokio::test]
 async fn should_return_401_if_old_code() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
 
   let signup_body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "password": "password123",
     "requires2FA": true
   });
@@ -58,7 +61,7 @@ async fn should_return_401_if_old_code() {
   assert_eq!(response.status().as_u16(), 201);
 
   let body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "login_attempt_id": uuid::Uuid::new_v4().to_string(),
     "2FACode": "123456"
   });
@@ -69,9 +72,10 @@ async fn should_return_401_if_old_code() {
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
 
   let signup_body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "password": "password123",
     "requires2FA": true
   });
@@ -79,7 +83,7 @@ async fn should_return_200_if_correct_code() {
   assert_eq!(response1.status().as_u16(), 201);
 
   let login_body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "password": "password123",
   });
   let response2= app.post_login(login_body).await;
@@ -91,7 +95,7 @@ async fn should_return_200_if_correct_code() {
   drop(local_two_fa_code_store); // Liberar o bloqueio de leitura
 
   let body = serde_json::json!({
-    "email": "teste@gmail.com",
+    "email": random_email,
     "login_attempt_id": login_attempt_id.as_ref().to_string(),
     "2FACode": code.as_ref().to_string()
   });

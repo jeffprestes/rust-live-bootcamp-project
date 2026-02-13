@@ -53,21 +53,24 @@ async fn should_return_400_if_invalid_input() {
 #[tokio::test]
 async fn should_return_404_user_not_found() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
   let body = serde_json::json!({
-    "email": "teste@email.com",
+    "email": random_email,
     "password": "password",
     "requires2FA": false
   });
   // First login attempt
   let response = app.post_login(body.clone()).await;
   assert_eq!(response.status().as_u16(), 404, "Usuário não encontrado");
+  
 }
 
 #[tokio::test]
 async fn should_return_200_login_success() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
   let body = serde_json::json!({
-    "email": "teste@email.com",
+    "email": random_email,
     "password": "password",
     "requires2FA": false
   });
@@ -85,13 +88,15 @@ async fn should_return_200_login_success() {
     .expect("Cookie de login não encontrado");
   
   assert!(!auth_cookie.value().is_empty(), "Valor do cookie de login está vazio");
+  
 }
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
   let body = serde_json::json!({
-    "email": "teste@email.com",
+    "email": random_email,
     "password": "password",
     "requires2FA": true
   });
@@ -108,4 +113,5 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     .expect("Falha ao desserializar resposta de 2FA");
 
   assert_eq!(json_body.message, "2FA é necessária para este usuário. Por favor, verifique seu dispositivo de autenticação.");
+  
 }

@@ -7,6 +7,7 @@ pub(crate) mod login;
 pub(crate) mod logout;
 pub mod verify_token;
 pub mod verify_2fa;
+pub mod cleanup;
 /* 
 mod verify_2fa;
 mod verify_token;
@@ -18,6 +19,7 @@ pub use login::login;
 pub use logout::logout;
 pub use verify_token::*;
 pub use verify_2fa::*;
+pub use cleanup::cleanup;
 
 use crate::app_state::AppState;
 
@@ -32,6 +34,7 @@ pub fn generate_routes(app_state: AppState, cors: CorsLayer) -> Router {
         .route("/login", post(login))
         .route("/logout", post(logout))
         .route("/logout", get(logout))
+        .route("/cleanup", get(cleanup))
         .route("/verify-token", post(verify_token))
         .route("/verify-2fa", post(verify_2fa))
         .fallback_service(assets_dir)

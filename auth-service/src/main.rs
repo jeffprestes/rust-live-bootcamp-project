@@ -6,10 +6,14 @@ async fn main() {
 
     dotenvy::dotenv().ok();
 
-    let _pg_pool = auth_service::configure_postgres().await;
+    let pg_pool = auth_service::configure_postgres().await;
+
+    // let user_store = std::sync::Arc::new(tokio::sync::RwLock::new(
+    //     auth_service::services::hashmap_user_store::HashMapUserStore::new(),
+    // ));
 
     let user_store = std::sync::Arc::new(tokio::sync::RwLock::new(
-        auth_service::services::hashmap_user_store::HashMapUserStore::new(),
+        auth_service::services::data_stores::db::PostgresUserStore::new(pg_pool.clone()),
     ));
 
     let banned_token_store = std::sync::Arc::new(tokio::sync::RwLock::new(

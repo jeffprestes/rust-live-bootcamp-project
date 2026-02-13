@@ -4,6 +4,7 @@ pub enum UserStoreError {
   UserNotFound,
   InvalidCredentials,
   UnexpectedError,
+  DatabaseError(String),
 }
 
 #[derive(Debug, PartialEq)]

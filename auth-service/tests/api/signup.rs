@@ -57,13 +57,15 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_201_on_successful_signup() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
   let body = serde_json::json!({
-    "email": "tes@email.com",
+    "email": random_email,
     "password": "password",
     "requires2FA": false
   });
   let response = app.post_signup(body.clone()).await;
   assert_eq!(response.status().as_u16(), 201, "Usuário criado com sucesso");
+  
 }
 
 #[tokio::test]
@@ -85,8 +87,9 @@ async fn should_return_400_if_invalid_input() {
 #[tokio::test]
 async fn should_return_409_if_user_already_exists() {
   let app = TestApp::new().await; 
+  let random_email = get_random_email();
   let body = serde_json::json!({
-    "email": "tes@email.com",
+    "email": random_email,
     "password": "password",
     "requires2FA": false
   });
@@ -96,4 +99,5 @@ async fn should_return_409_if_user_already_exists() {
   // Second signup attempt with the same email
   let response2 = app.post_signup(body.clone()).await;
   assert_eq!(response2.status().as_u16(), 409, "Usuário já existe");
+  
 }

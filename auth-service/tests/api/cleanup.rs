@@ -21,3 +21,24 @@ async fn should_return_200_if_valid_login() {
   assert_eq!(response4.status().as_u16(), 200);
 
 }
+
+#[tokio::test]
+async fn should_return_200_if_valid_login_and_cleanup_single_user() {
+  let app = TestApp::new().await;
+  let random_email = get_random_email();  
+
+  let body = serde_json::json!({
+    "email": random_email,
+    "password": "password1234",
+    "requires2FA": false
+  });
+  // First signup attempt
+  let response1 = app.post_signup(body.clone()).await;
+  assert_eq!(response1.status().as_u16(), 201, "Usuário criado com sucesso");
+  
+  let response2 = app.post_login(body.clone()).await;
+  assert_eq!(response2.status(), 200);
+
+  let response3 = app.get_cleanup_single_user(random_email.clone()).await;
+  assert_eq!(response3.status().as_u16(), 200);
+}

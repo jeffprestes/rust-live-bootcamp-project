@@ -35,12 +35,12 @@ pub fn generate_routes(app_state: AppState, cors: CorsLayer) -> Router {
         .route("/logout", post(logout))
         .route("/logout", get(logout))
         .route("/cleanup", get(cleanup))
+        .route("/cleanup/{email}", get(cleanup::cleanup_single_user))
         .route("/verify-token", post(verify_token))
         .route("/verify-2fa", post(verify_2fa))
         .fallback_service(assets_dir)
         .layer(cors)
         .with_state(app_state);
-        //TODO: Add routes for verify-2fa, and verify-token
     router
 }
 

@@ -23,6 +23,19 @@ impl PostgresUserStore {
       })?;
     Ok(())
   }
+
+  pub async fn clear_single_user(&mut self, email: &str) -> Result<(), UserStoreError> {
+    let delete_query = "DELETE FROM users WHERE email = $1";
+    sqlx::query(delete_query)
+      .bind(email)
+      .execute(&self.pool)
+      .await
+      .map_err(|e| {
+        eprintln!("PostgresUserStore::clear_single_user -> Erro ao limpar usuário no banco: {:?}", e);
+        UserStoreError::DatabaseError(e.to_string())
+      })?;
+    Ok(())
+  }
 }
 
 #[async_trait::async_trait]

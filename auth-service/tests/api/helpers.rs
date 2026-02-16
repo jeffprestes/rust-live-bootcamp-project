@@ -114,6 +114,14 @@ impl TestApp {
       .expect("Falha ao executar requisição GET para /cleanup.")
   }
 
+  pub async fn get_cleanup_single_user(&self, email: String) -> reqwest::Response {
+    self.http_client
+      .get(&format!("{}/cleanup/{}", &self.address, email))
+      .send()
+      .await
+      .expect("Falha ao executar requisição GET para /cleanup/:email.")
+  }
+
   pub async fn post_verify_token<Body>(&self, body: Body) -> reqwest::Response where Body: serde::Serialize {
     self.http_client
       .post(&format!("{}/verify-token", &self.address))

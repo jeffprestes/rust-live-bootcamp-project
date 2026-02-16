@@ -33,3 +33,9 @@ docker compose up
 ```
 
 visit http://localhost:8000 and http://localhost:3000
+
+## Redis local setup (Docker Desktop)
+
+If you want to run Redis locally with Docker Desktop, follow:
+
+- [REDIS_LOCAL_SETUP.md](REDIS_LOCAL_SETUP.md)

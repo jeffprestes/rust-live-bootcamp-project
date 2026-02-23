@@ -1,3 +1,5 @@
+use auth_service::models::data_store::TwoFACodeStore;
+use auth_service::services::hashmap_2fa_code_store::HashMapTwoFACodeStore;
 use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
@@ -89,10 +91,11 @@ async fn should_return_200_if_correct_code() {
   let response2= app.post_login(login_body).await;
   assert_eq!(response2.status().as_u16(), 206);
 
-  let local_two_fa_code_store = app.app_state().await.two_fa_code_store.read().await;
+  let guard = app.app_state().await.two_fa_code_store.read().await;
+  let local_two_fa_code_store = unsafe { &*(&*guard as *const (dyn TwoFACodeStore + Send + Sync) as *const HashMapTwoFACodeStore) };
   let login_attempt_id = local_two_fa_code_store.codes.keys().next().unwrap().clone();
   let code = local_two_fa_code_store.codes.get(&login_attempt_id).unwrap().1.clone();
-  drop(local_two_fa_code_store); // Liberar o bloqueio de leitura
+  drop(guard); // Liberar o bloqueio de leitura
 
   let body = serde_json::json!({
     "email": random_email,

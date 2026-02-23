@@ -9,7 +9,7 @@ use crate::{
   ErrorResponse, app_state::AppState, 
   models::{
     data_store::UserStore as _, 
-    data_store::{TwoFACodeStore, LoginAttemptId, TwoFACode},
+    data_store::{LoginAttemptId, TwoFACode},
     email::Email,
     error::AuthAPIError, 
     login::{LoginRequest, LoginResponse, TwoFactorAuthResponse}, 

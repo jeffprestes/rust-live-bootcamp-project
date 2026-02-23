@@ -18,12 +18,12 @@ impl HashsetBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    fn ban_token(&mut self,token: &str) -> Option<()>  {
-        self.banned_tokens.insert(token.to_string());
-        Some(())
-    }
+  async fn ban_token(&mut self,token: &str) -> Option<()>  {
+      self.banned_tokens.insert(token.to_string());
+      Some(())
+  }
 
-    fn is_token_banned(&self,token: &str) -> bool {
-        self.banned_tokens.contains(token)
-    }
+  async fn is_token_banned(&self,token: &str) -> bool {
+      self.banned_tokens.contains(token)
+  }
 } 

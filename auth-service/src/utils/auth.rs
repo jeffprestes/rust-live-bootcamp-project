@@ -4,7 +4,6 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 
 use crate::{app_state::AppState, models::email::Email, utils::constants::{JWT_COOKIE_NAME, JWT_SECRET}};
-use crate::models::data_store::BannedTokenStore;
 
 pub const TOKEN_TTL_SECONDS: i64 = 600; // 24 horas
 
@@ -92,7 +91,7 @@ pub fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
 pub async fn validate_token(app_state: &AppState, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
   let token_data = decode_token(token)?;
 
-  if app_state.banned_token_store.read().await.is_token_banned(token) {
+  if app_state.banned_token_store.read().await.is_token_banned(token).await {
     return Err(jsonwebtoken::errors::Error::from(
       jsonwebtoken::errors::ErrorKind::InvalidToken,
     ));

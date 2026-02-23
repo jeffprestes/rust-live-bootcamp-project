@@ -1,4 +1,4 @@
-use auth_service::{models::data_store::BannedTokenStore, utils::constants::JWT_COOKIE_NAME};
+use auth_service::utils::constants::JWT_COOKIE_NAME;
 use reqwest::Url;
 
 use crate::helpers::{get_random_email, TestApp};
@@ -82,7 +82,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     .banned_token_store
     .read()
     .await
-    .is_token_banned(&token);
+    .is_token_banned(&token).await;
   
   assert_eq!(is_banned, true);
 

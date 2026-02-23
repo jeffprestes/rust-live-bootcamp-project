@@ -15,7 +15,6 @@ use crate::app_state::AppState;
 use crate::models::error::AuthAPIError;
 use crate::utils::auth::validate_token;
 use crate::utils::constants::JWT_COOKIE_NAME;
-use crate::models::data_store::BannedTokenStore;
 
 
 pub async fn logout (
@@ -41,7 +40,7 @@ pub async fn logout (
   let ban_result = app_state.banned_token_store
     .write()
     .await
-    .ban_token(&token_string);
+    .ban_token(&token_string).await;
 
   if ban_result.is_none() {
     eprintln!("routes::logout -> Erro ao banir token durante logout");

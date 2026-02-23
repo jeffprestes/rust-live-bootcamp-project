@@ -17,7 +17,7 @@ async fn should_return_200_if_valid_login() {
   let response2 = app.post_login(body.clone()).await;
   assert_eq!(response2.status(), 200);
 
-  let response4 = app.get_cleanup().await;
+  let response4 = app.get_cleanup_single_user(random_email.clone()).await;
   assert_eq!(response4.status().as_u16(), 200);
 
 }

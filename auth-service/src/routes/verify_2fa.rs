@@ -9,7 +9,6 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use crate::models::data_store::TwoFACode;
 use crate::models::data_store::TwoFACodeStoreError;
-use crate::models::data_store::TwoFACodeStore;
 
 use crate::utils::auth::generate_auth_token_wrap_into_cookie;
 use crate::{

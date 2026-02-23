@@ -2,6 +2,7 @@ use std::error::Error;
 
 use axum::{Router};
 use axum::serve::Serve;
+use redis::RedisResult;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -16,6 +17,8 @@ use models::error::AuthAPIError;
 use routes::generate_routes;
 use app_state::AppState;
 use tower_http::cors::CorsLayer;
+
+use crate::utils::constants::{DATABASE_URL, REDIS_URL};
 
 pub mod routes;
 pub mod models;
@@ -96,8 +99,19 @@ pub async fn get_postgres_pool(database_url: &str) -> Result<sqlx::PgPool, sqlx:
 }
 
 pub async fn configure_postgres() -> PgPool {
-  let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-  let pg_pool = get_postgres_pool(&database_url).await.expect("Failed to connect to PostgreSQL");
+  //let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+  let pg_pool = get_postgres_pool(&DATABASE_URL).await.expect("Failed to connect to PostgreSQL");
   sqlx::migrate!("./migrations").run(&pg_pool).await.expect("Failed to run migrations");
   pg_pool
+}
+
+pub fn get_redis_client(redis_hostname: String) -> RedisResult<redis::Client> {
+  redis::Client::open(redis_hostname)
+}
+
+pub fn configure_redis() -> redis::Connection {
+  get_redis_client(REDIS_URL.to_owned())
+    .expect("Failed to create Redis client")
+    .get_connection()
+    .expect("Failed to connect to Redis")
 }

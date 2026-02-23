@@ -16,6 +16,11 @@ pub enum TwoFACodeStoreError {
   ExpiredCode
 }
 
+#[derive(Debug, PartialEq)]
+pub enum BannedTokenStoreError {
+  UnexpectedError,
+}
+
 use crate::models::email::Email;
 
 use super::user::User;
@@ -29,8 +34,8 @@ pub trait UserStore {
 
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
-  fn ban_token(&mut self, token: &str) -> Option<()>;
-  fn is_token_banned(&self, token: &str) -> bool;
+  async fn ban_token(&mut self, token: &str) -> Option<()>;
+  async fn is_token_banned(&self, token: &str) -> bool;
 }
 
 #[async_trait::async_trait]

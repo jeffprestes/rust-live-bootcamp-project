@@ -15,6 +15,9 @@ services:
     image: jeffprestes/auth-service
     environment:
       JWT_SECRET: "minha_chave_secreta_super_secreta"
+      DATABASE_URL: "postgres://rust:teste@host.docker.internal:5432/postgres"
+      POSTGRES_PASSWORD: "teste"
+      REDIS_URL: "redis://host.docker.internal:6379"
     restart: "always" # automatically restart container when server crashes
     ports:
       - "3000:3000" # expose port 3000 so that applications outside the container can connect to it 

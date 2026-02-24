@@ -1,10 +1,33 @@
-#[derive(Debug, PartialEq)]  
+use color_eyre::eyre::Report;
+use thiserror::Error;
+use crate::models::email::Email;
+use super::user::User;
+
+#[derive(Debug, Error)]  
 pub enum UserStoreError {
+  #[error("Usuário já existe")]
   UserAlreadyExists,
+  #[error("Usuário não encontrado")]
   UserNotFound,
+  #[error("Credenciais inválidas")]
   InvalidCredentials,
-  UnexpectedError,
+  #[error("Erro inesperado")]
+  UnexpectedError(#[source] Report),
+  #[error("Erro de banco de dados: {0}")]
   DatabaseError(String),
+}
+
+impl PartialEq for UserStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (UserStoreError::UserAlreadyExists, UserStoreError::UserAlreadyExists) |
+            (UserStoreError::UserNotFound, UserStoreError::UserNotFound) |
+            (UserStoreError::InvalidCredentials, UserStoreError::InvalidCredentials) |
+            (UserStoreError::UnexpectedError(_), UserStoreError::UnexpectedError(_)) |
+            (UserStoreError::DatabaseError(_), UserStoreError::DatabaseError(_))
+        )
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -20,10 +43,6 @@ pub enum TwoFACodeStoreError {
 pub enum BannedTokenStoreError {
   UnexpectedError,
 }
-
-use crate::models::email::Email;
-
-use super::user::User;
 
 #[async_trait::async_trait]
 pub trait UserStore {

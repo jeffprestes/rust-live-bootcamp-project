@@ -17,7 +17,7 @@ pub async fn verify_token(
     _jar: CookieJar,
     Json(request): Json<VerifyTokenRequest>,
 ) -> impl IntoResponse {
-  println!("routes::verify_token -> Payload Recebido para verify_token: {:?}", request);
+  tracing::info!("routes::verify_token -> Payload Recebido para verify_token: {:?}", request);
   let token = request.token.trim();
   if token.is_empty() {
     return (
@@ -31,7 +31,7 @@ pub async fn verify_token(
   let validation = validate_token(&state, token).await;
 
   if let Err(err) = validation {
-    eprintln!("routes::verify_token -> Token inválido: {:?}", err);
+    tracing::error!("routes::verify_token -> Token inválido: {:?}", err);
     return (
       StatusCode::UNAUTHORIZED,
       Json(VerifyTokenResponse { message: format!("Token inválido: {err}") }),

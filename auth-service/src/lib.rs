@@ -55,34 +55,37 @@ impl Application {
   }
 
   pub async fn run_until_stopped(self) -> Result<(), Box<dyn Error + Send + Sync>> {
-    println!("listening on {}", self.address);
+    tracing::info!("lib::run_until_stopped -> escutando na porta {}", self.address);
     self.server.await?;
     Ok(())
   }
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorResponse {
   pub error: String,
 }
 
-#[derive(serde::Serialize, Deserialize)]
+#[derive(serde::Serialize, Deserialize, Debug)]
 pub struct SignupResponse {
   message: String,
 }
 
 impl IntoResponse for AuthAPIError {
   fn into_response(self) -> Response {
+    log_error_chain(&self);
     let (status, error_message) = match self {
-      AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "Usuário já existe".to_string()),
-      AuthAPIError::UserNotFound => (StatusCode::NOT_FOUND, "Usuário não encontrado".to_string()),
-      AuthAPIError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "Credenciais inválidas".to_string()),
-      AuthAPIError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
-      AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Token ausente".to_string()),
-      AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Token inválido".to_string()),
-      AuthAPIError::ExpiredToken => (StatusCode::UNAUTHORIZED, "Token expirado".to_string())
-    };
+        AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "Usuário já existe".to_string()),
+        AuthAPIError::UserNotFound => (StatusCode::NOT_FOUND, "Usuário não encontrado".to_string()),
+        AuthAPIError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "Credenciais inválidas".to_string()),
+        AuthAPIError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+        AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Token ausente".to_string()),
+        AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Token inválido".to_string()),
+        AuthAPIError::ExpiredToken => (StatusCode::UNAUTHORIZED, "Token expirado".to_string()),
+        AuthAPIError::DatabaseError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+        AuthAPIError::UnexpectedError(report) => (StatusCode::INTERNAL_SERVER_ERROR, report.to_string()),
+    };  
     let error_response = ErrorResponse {
       error: error_message,
     };
@@ -114,4 +117,16 @@ pub fn configure_redis() -> redis::Connection {
     .expect("Failed to create Redis client")
     .get_connection()
     .expect("Failed to connect to Redis")
+}
+
+pub fn log_error_chain(error: &(dyn Error + 'static)) {
+  let separator = "\n------------------------------\n";
+  let mut report = format!("{}{:?}\n", separator, error);
+  let mut current = error.source();
+  while let Some(cause) = current {
+    report.push_str(&format!("Caused by: {:?}\n", cause));
+    current = cause.source();
+  }
+  report.push_str(separator);
+  tracing::error!("{}", report);
 }

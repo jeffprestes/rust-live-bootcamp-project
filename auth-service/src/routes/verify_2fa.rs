@@ -20,7 +20,7 @@ pub async fn verify_2fa(
     jar: CookieJar,
     Json(request): Json<Verify2FARequest>,
 ) -> impl IntoResponse {
-  println!("routes::verify_2fa -> Payload Recebido para verify_2fa: {:?}", request);
+  tracing::info!("routes::verify_2fa -> Payload Recebido para verify_2fa: {:?}", request);
   let token = request.token.trim();
   if token.is_empty() {
     return (
@@ -34,6 +34,7 @@ pub async fn verify_2fa(
   let two_fa_code = match two_fa_code_parsed {
     Ok(code) => code,
     Err(err) => {
+      tracing::error!("routes::verify_2fa -> Token inválido: {:?}", err);
       return (StatusCode::BAD_REQUEST, Json(Verify2FAResponse { message: format!("Token inválido: {}", err) })).into_response();
     }
   };

@@ -5,11 +5,11 @@ use axum::{
   response::IntoResponse
 };
 use axum_extra::extract::CookieJar;
+use color_eyre::eyre::eyre;
 use crate::{
   ErrorResponse, app_state::AppState, 
   models::{
-    data_store::UserStore as _, 
-    data_store::{LoginAttemptId, TwoFACode},
+    data_store::{LoginAttemptId, TwoFACode, UserStore as _}, 
     email::Email,
     error::AuthAPIError, 
     login::{LoginRequest, LoginResponse, TwoFactorAuthResponse}, 
@@ -75,7 +75,7 @@ pub async fn login(
     jar: CookieJar,
     Json(request): Json<LoginRequest>
   ) -> impl IntoResponse {
-  println!("routes::login -> Payload Recebido para login: {:?}", request);
+  tracing::info!("routes::login -> Payload Recebido para login: {:?}", request);
    
   match Email::validate(&request.email.as_str()) {
     Ok(_) => (),
@@ -84,12 +84,15 @@ pub async fn login(
     }
   };
   
-  match HashedPassword::validate(request.password.clone().as_str()) {
+  let pass_hasher_result = HashedPassword::new(request.password.clone());
+  match pass_hasher_result {
     Ok(_) => (),
     Err(err) => {
       return (jar, (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: err.to_string() }))).into_response();
     }
-  };
+  }
+  let pass_hasher = pass_hasher_result.unwrap();
+  let password_hashed = pass_hasher.to_hash();
 
   let user_store = state.user_store.read().await;
   let user = match user_store.get_user(request.email.clone().as_str()).await {
@@ -99,7 +102,12 @@ pub async fn login(
     }
   };
 
-  println!("routes::login -> Payload Validado para login: {:?}", request);
+  if user.password.as_ref() != password_hashed {
+    tracing::error!("{}", eyre!("routes::login -> Credenciais inválidas para email: {:?}", request.email));
+    return (jar, (StatusCode::UNAUTHORIZED, Json(ErrorResponse { error: "Credenciais inválidas".to_string() }))).into_response();
+  }
+
+  tracing::info!("routes::login -> Payload Validado para login: {:?}", request);
   let email = match Email::new(request.email.clone()) {
     Ok(email) => email,
     Err(err) => {

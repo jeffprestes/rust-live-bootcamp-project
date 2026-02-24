@@ -1,6 +1,8 @@
 use axum::{Router, routing::{get, post}, response::Html};
 use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
 use std::sync::Arc;
+use crate::{app_state::AppState, utils::tracing::{make_span_with_request_id, on_request, on_response}};
+use tower_http::trace::TraceLayer;
 
 pub(crate) mod signup;
 pub(crate) mod login;
@@ -21,7 +23,6 @@ pub use verify_token::*;
 pub use verify_2fa::*;
 pub use cleanup::cleanup;
 
-use crate::app_state::AppState;
 
 pub fn generate_routes(app_state: AppState, cors: CorsLayer) -> Router {
     // This function can be used to initialize or configure routes if needed in the future.
@@ -40,6 +41,11 @@ pub fn generate_routes(app_state: AppState, cors: CorsLayer) -> Router {
         .route("/verify-2fa", post(verify_2fa))
         .fallback_service(assets_dir)
         .layer(cors)
+        .layer(TraceLayer::new_for_http()
+            .make_span_with(make_span_with_request_id)
+            .on_request(on_request)
+            .on_response(on_response)
+        )
         .with_state(app_state);
     router
 }

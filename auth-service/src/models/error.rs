@@ -1,23 +1,25 @@
+use thiserror::Error;
+use color_eyre::eyre::Report;
+
+#[derive(Debug, Error)]
 pub enum AuthAPIError {
+    #[error("Usuário já existe")]
     UserAlreadyExists,
+    #[error("Usuário não encontrado")]
     UserNotFound,
+    #[error("Credenciais inválidas")]
     InvalidCredentials,
+    #[error("Erro interno: {0}")]
     InternalError(String),
+    #[error("Token ausente")]   
     MissingToken,
+    #[error("Token inválido")]
     InvalidToken,
+    #[error("Token expirado")]
     ExpiredToken,
+    #[error("Erro de banco de dados: {0}")]
+    DatabaseError(String),
+    #[error("Erro inesperado")]
+    UnexpectedError(#[source] Report),
 }
 
-impl std::fmt::Display for AuthAPIError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AuthAPIError::UserAlreadyExists => write!(f, "Usuário já existe"),
-            AuthAPIError::UserNotFound => write!(f, "Usuário não encontrado"),
-            AuthAPIError::InvalidCredentials => write!(f, "Credenciais inválidas"),
-            AuthAPIError::InternalError(msg) => write!(f, "Erro interno: {}", msg),
-            AuthAPIError::MissingToken => write!(f, "Token ausente"),
-            AuthAPIError::InvalidToken => write!(f, "Token inválido"),
-            AuthAPIError::ExpiredToken => write!(f, "Token expirado"),
-        }
-    }
-}

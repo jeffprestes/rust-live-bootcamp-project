@@ -1,5 +1,5 @@
 use auth_service::{
-    Application, configure_postgres, configure_redis, models::data_store::TwoFACodeStore as _, services::email_client::MockEmailClient, utils::constants::prod}
+    Application, configure_postgres, configure_redis, models::data_store::TwoFACodeStore as _, services::email_client::MockEmailClient, utils::{constants::prod, tracing::init_tracing}}
 ;
 
 #[tokio::main]
@@ -7,6 +7,8 @@ use auth_service::{
 async fn main() {
 
     dotenvy::dotenv().ok();
+    color_eyre::install().expect("Falha ao instalar color_eyre");
+    init_tracing().expect("Erro ao inicializar o tracing...");
 
     let pg_pool = configure_postgres().await;
     let conn_redis = configure_redis();
@@ -38,9 +40,9 @@ async fn main() {
     .await
     .expect("Falha ao subir a aplicação");
 
-    println!("auth-service::main -> Servidor rodando em {}", app.address);
-    println!("auth-service::main -> versao 20260223-01.");
-    println!("auth-service::main -> Pressione Ctrl+C para parar o servidor.");
+    tracing::info!("auth-service::main -> Servidor rodando em {}", app.address);
+    tracing::info!("auth-service::main -> versao 20260223-11");
+    tracing::info!("auth-service::main -> Pressione Ctrl+C para parar o servidor.");
 
     app.run_until_stopped()
     .await

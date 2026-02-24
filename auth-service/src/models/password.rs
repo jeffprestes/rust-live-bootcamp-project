@@ -1,10 +1,10 @@
-use std::error::Error;
-
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, Version};
 use argon2::PasswordVerifier;
 use argon2::PasswordHasher;
+use color_eyre::eyre::{Context, Result, eyre};
+
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PasswordError {
@@ -62,29 +62,37 @@ impl HashedPassword {
       format!("hashed_{}", self.0)
     }
 
-    pub async fn verify_raw_password(&self, password: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+    #[tracing::instrument(name = "Verificando senha crua", skip_all)]
+    pub async fn verify_raw_password(&self, password: &str) -> Result<()> {
+        let current_span: tracing::Span = tracing::Span::current();
         let password_hash = self.as_ref();
         let password = password.to_owned();
 
-        let expected_password_hash = PasswordHash::new(password_hash)?;
-        
-        Argon2::default().verify_password(
-            password.as_bytes(),
-            &expected_password_hash)
-            .map_err(|e| e.into())
+        current_span.in_scope(|| {
+            let expected_password_hash = PasswordHash::new(password_hash)?;
+            
+            Argon2::default()
+                .verify_password(password.as_bytes(),&expected_password_hash)
+                .wrap_err("Falha ao verificar senha crua")?;
+            Ok(())
+        })
     }
 
-    pub async fn compute_password_hash(password: &str) -> Result<String, Box<dyn Error>> {
+    #[tracing::instrument(name = "Computando hash da senha", skip_all)]
+    pub async fn compute_password_hash(password: &str) -> Result<String> {
+        let current_span: tracing::Span = tracing::Span::current();
         let password = password.to_owned();
-        let salt = SaltString::generate(&mut OsRng);
-        let password_hash = Argon2::new(
-            Algorithm::Argon2id,
-            Version::V0x13,
-            Params::new(15000, 2, 1, None)?,
-        )
-        .hash_password(password.as_bytes(), &salt)?
-        .to_string();
-        Ok(password_hash)
+        current_span.in_scope(|| {
+            let salt = SaltString::generate(&mut OsRng);
+            let password_hash = Argon2::new(
+                Algorithm::Argon2id,
+                Version::V0x13,
+                Params::new(15000, 2, 1, None)?,
+            )
+            .hash_password(password.as_bytes(), &salt).map_err(|e| eyre!("Falha ao computar hash da senha: {}", e))?
+            .to_string();
+            Ok(password_hash)
+        })
     }
 
 }

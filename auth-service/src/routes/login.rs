@@ -19,6 +19,7 @@ use crate::{
 };
 use std::sync::Arc;
 use rand::Rng;
+use secrecy::ExposeSecret;
 
 
 async fn handle_2fa(jar: CookieJar, email: &Email, state: &AppState)
@@ -69,7 +70,7 @@ async fn handle_no_2fa(email: &Email, jar: CookieJar)
   (updated_jar, Ok((StatusCode::OK, Json(LoginResponse::RegularAuth))))
 }
 
-
+#[tracing::instrument(name = "Executando login", skip_all)]
 pub async fn login(
     State(state): State<Arc<AppState>>, 
     jar: CookieJar,
@@ -77,14 +78,16 @@ pub async fn login(
   ) -> impl IntoResponse {
   tracing::info!("routes::login -> Payload Recebido para login: {:?}", request);
    
-  match Email::validate(&request.email.as_str()) {
+  match Email::validate(&request.email) {
     Ok(_) => (),
     Err(err) => {
       return (jar, (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: err.to_string() }))).into_response();
     }
   };
   
-  let pass_hasher_result = HashedPassword::new(request.password.clone());
+  let pass_hasher_result = HashedPassword::new(
+    request.password.clone()
+  );
   match pass_hasher_result {
     Ok(_) => (),
     Err(err) => {
@@ -95,14 +98,15 @@ pub async fn login(
   let password_hashed = pass_hasher.to_hash();
 
   let user_store = state.user_store.read().await;
-  let user = match user_store.get_user(request.email.clone().as_str()).await {
+  let email = Email::new(request.email.clone()).unwrap();
+  let user = match user_store.get_user(email.clone()).await {
     Ok(user) => user,
     Err(_) => {
       return (jar, (StatusCode::NOT_FOUND, Json(ErrorResponse { error: "Usuário não encontrado".to_string() }))).into_response();
     }
   };
 
-  if user.password.as_ref() != password_hashed {
+  if user.password.as_ref().expose_secret() != password_hashed.expose_secret() {
     tracing::error!("{}", eyre!("routes::login -> Credenciais inválidas para email: {:?}", request.email));
     return (jar, (StatusCode::UNAUTHORIZED, Json(ErrorResponse { error: "Credenciais inválidas".to_string() }))).into_response();
   }

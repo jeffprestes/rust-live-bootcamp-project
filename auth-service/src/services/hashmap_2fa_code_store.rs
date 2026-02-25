@@ -47,18 +47,22 @@ impl TwoFACodeStore for HashMapTwoFACodeStore {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use secrecy::SecretString;
+  use secrecy::ExposeSecret;
+  use crate::models::email::Email;
+
+use super::*;
 
   #[tokio::test]
   async fn test_add_and_validate_code() {
     let mut store = HashMapTwoFACodeStore::default();
-    let email = Email::new("test@example.com".to_string()).unwrap();  
+    let email = Email::new(SecretString::new("test@example.com".to_string().into())).unwrap();  
     let login_attempt_id = LoginAttemptId::parse("attempt1".to_string()).unwrap();
     let code = TwoFACode::parse("123456".to_string()).unwrap(); 
 
     store.add_code(email.clone(), login_attempt_id.clone(), code.clone()).await.unwrap();
     let result = store.validate_code(&login_attempt_id, &code).await;
-    assert_eq!(result.unwrap(), email);
+    assert_eq!(result.unwrap().address.expose_secret(), email.address.expose_secret());
 
     let invalid_code = TwoFACode::parse("654321".to_string()).unwrap();
     let result_invalid = store.validate_code(&login_attempt_id, &invalid_code).await;

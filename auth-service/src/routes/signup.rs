@@ -23,8 +23,8 @@ pub async fn signup(State(state): State<Arc<AppState>>, payload: axum::Json<Sign
   };
   
   let mut user_store = state.user_store.write().await;
-  if user_store.get_user(new_email.as_ref()).await.is_ok() {
-    tracing::error!("routes::signup -> Usuário já existe: {:?}", new_email.as_ref());
+  if user_store.get_user(new_email.clone()).await.is_ok() {
+    tracing::error!("routes::signup -> Usuário já existe");
     return (StatusCode::CONFLICT, Json(ErrorResponse { error: "Usuário já existe".to_string() })).into_response();
   }
 

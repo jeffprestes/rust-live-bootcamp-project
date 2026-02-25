@@ -1,4 +1,5 @@
 use auth_service::models::data_store::TwoFACodeStore;
+use auth_service::models::email::Email;
 use auth_service::{Application, utils::constants::dev};
 use reqwest::cookie::Jar;
 use std::sync::Arc;
@@ -8,6 +9,7 @@ use sqlx::postgres::{PgConnectOptions, PgConnection};
 use std::str::FromStr;
 use sqlx::Connection;
 use sqlx::Executor;
+use secrecy::ExposeSecret;
 
 pub struct TestApp {
   pub address: String,
@@ -114,9 +116,9 @@ impl TestApp {
       .expect("Falha ao executar requisição GET para /cleanup.")
   }
 
-  pub async fn get_cleanup_single_user(&self, email: String) -> reqwest::Response {
+  pub async fn get_cleanup_single_user(&self, email: Email) -> reqwest::Response {
     self.http_client
-      .get(&format!("{}/cleanup/{}", &self.address, email))
+      .get(&format!("{}/cleanup/{}", &self.address, email.address.expose_secret()))
       .send()
       .await
       .expect("Falha ao executar requisição GET para /cleanup/:email.")
@@ -142,8 +144,9 @@ impl TestApp {
 }  
 
 
-pub fn get_random_email() -> String {
-  format!("{}@example.com", uuid::Uuid::new_v4())
+pub fn get_random_email() -> Email {
+  let email_address = format!("{}@example.com", uuid::Uuid::new_v4());
+  Email { address: email_address.into() }
 }
 
 #[allow(dead_code)]

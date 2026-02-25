@@ -3,7 +3,7 @@ use std::error::Error;
 use axum::{Router};
 use axum::serve::Serve;
 use redis::RedisResult;
-use reqwest::Method;
+use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -17,8 +17,13 @@ use models::error::AuthAPIError;
 use routes::generate_routes;
 use app_state::AppState;
 use tower_http::cors::CorsLayer;
+use std::time::Duration;  
+use crate::utils::constants::{DATABASE_URL, REDIS_URL, POSTMARK_AUTH_TOKEN, POSTMARK_TIMEOUT_SECONDS};
+use crate::utils::constants::prod;
+use crate::models::email::Email;
+use secrecy::SecretString;  
 
-use crate::utils::constants::{DATABASE_URL, REDIS_URL};
+use crate::services::postmark_email_client::PostmarkEmailClient;
 
 pub mod routes;
 pub mod models;
@@ -129,4 +134,18 @@ pub fn log_error_chain(error: &(dyn Error + 'static)) {
   }
   report.push_str(separator);
   tracing::error!("{}", report);
+}
+
+pub fn configure_postmark_email_client() -> PostmarkEmailClient {
+    let http_client = Client::builder()
+        .timeout(Duration::from_secs(POSTMARK_TIMEOUT_SECONDS))
+        .build()
+        .expect("Falha ao construir o cliente HTTP para o Postmark");
+
+    PostmarkEmailClient::new(
+        SecretString::from(POSTMARK_AUTH_TOKEN.to_owned()),
+        Email::new(prod::email_client::SENDER.to_owned().into()).unwrap(),
+        Some(prod::email_client::BASE_URL.to_owned()),
+        http_client,
+    )
 }

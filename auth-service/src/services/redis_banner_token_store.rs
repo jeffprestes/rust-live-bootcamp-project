@@ -25,7 +25,7 @@ impl BannedTokenStore for RedisBannedTokenStore {
     match result {
         Ok(_) => Some(()),
         Err(_) => {
-          eprintln!("RedisBannedTokenStore::ban_token => Error banning token in Redis: {:?}", result.err());
+          tracing::error!("RedisBannedTokenStore::ban_token => Error banning token in Redis: {:?}", result.err());
           None
         },
     }
@@ -39,7 +39,7 @@ impl BannedTokenStore for RedisBannedTokenStore {
         Ok(Some(_)) => true,
         Ok(None) => false,
         Err(_) => {
-          eprintln!("RedisBannedTokenStore::is_token_banned => Error checking banned token in Redis: {:?}", result.err());
+          tracing::error!("RedisBannedTokenStore::is_token_banned => Error checking banned token in Redis: {:?}", result.err());
           false
         },
     }

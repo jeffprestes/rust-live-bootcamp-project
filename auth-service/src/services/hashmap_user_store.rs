@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use secrecy::ExposeSecret;
+
+use crate::models::email::Email;
 use crate::models::user::User;
 use crate::models::data_store::UserStoreError;
 use crate::models::data_store::UserStore;
@@ -21,19 +24,19 @@ impl HashMapUserStore {
 impl UserStore for HashMapUserStore {
 
   async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-    if self.users.contains_key(&user.email.address) {
+    if self.users.contains_key(user.email.address.expose_secret().as_ref() as &str) {   
       return Err(UserStoreError::UserAlreadyExists);
     }
-    self.users.insert(user.email.address.clone(), user);
+    self.users.insert(user.email.address.expose_secret().to_string(), user);
     Ok(())
   }
-
-  async fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
-    self.users.get(email).ok_or(UserStoreError::UserNotFound)
+  
+  async fn get_user(&self, email: Email) -> Result<&User, UserStoreError> {
+    self.users.get(email.address.expose_secret().as_ref() as &str).ok_or(UserStoreError::UserNotFound)
   }
 
-  async fn validate_user(&self, email: &str, raw_password: &str) -> Result<&User, UserStoreError> {
-    let user = self.users.get(email).ok_or(UserStoreError::UserNotFound)?;
+  async fn validate_user(&self, email: &Email, raw_password: &str) -> Result<&User, UserStoreError> {
+    let user = self.users.get(email.address.expose_secret().as_ref() as &str).ok_or(UserStoreError::UserNotFound)?;
     user.password.verify_raw_password(raw_password).await.map_err(|_| UserStoreError::InvalidCredentials)?;
     Ok(user)
   }
@@ -42,6 +45,7 @@ impl UserStore for HashMapUserStore {
 #[cfg(test)]
 mod tests {
 
+use secrecy::{ExposeSecret, SecretString};
 use crate::models::email::Email;
 use crate::models::password::HashedPassword;
 
@@ -50,8 +54,8 @@ use super::*;
   #[tokio::test]
   async fn test_add_user() {
     let mut store = HashMapUserStore::new();
-    let user_mail = Email::new("test@example.com".to_string()).unwrap();
-    let user = User::new(user_mail, "password".to_string(), false);
+    let user_mail = Email::new("test@example.com".to_string().into()).unwrap();
+    let user = User::new(user_mail, SecretString::new("password".to_string().into()), false);
     let result = store.add_user(user.clone()).await;
     assert!(result.is_ok());
   }
@@ -59,19 +63,19 @@ use super::*;
   #[tokio::test]
   async fn test_get_user() {
     let mut store = HashMapUserStore::new();
-    let user_mail = Email::new("test@example.com".to_string()).unwrap();
-    let user = User::new(user_mail, "password".to_string(), false);
+    let user_mail = Email::new("test@example.com".to_string().into()).unwrap();
+    let user = User::new(user_mail, SecretString::new("password".to_string().into()), false);
     let result: Result<(), UserStoreError> = store.add_user(user.clone()).await;
     assert!(result.is_ok());
-    let retrieved_user: Result<&User, UserStoreError> = store.get_user(&user.email.address).await;
-    assert_eq!(retrieved_user.unwrap(), &user);
+    let retrieved_user: Result<&User, UserStoreError> = store.get_user(user.email.clone()).await;
+    assert_eq!(retrieved_user.unwrap().email.address.expose_secret(), user.email.address.expose_secret());
   }
 
   #[tokio::test]
   async fn test_validate_user() {
     let mut store = HashMapUserStore::new();
-    let user_mail = Email::new("test@example.com".to_string()).unwrap();
-    let password = "password".to_string();
+    let user_mail = Email::new("test@example.com".to_string().into()).unwrap();
+    let password = SecretString::new("password".to_string().into());
     let password_hash = HashedPassword::compute_password_hash(&password)
       .await
       .expect("Failed to hash password");
@@ -85,7 +89,12 @@ use super::*;
     };
     let result: Result<(), UserStoreError> = store.add_user(user.clone()).await;
     assert!(result.is_ok());
-    let retrieved_user: Result<&User, UserStoreError> = store.validate_user(&user.email.address, &password).await;
-    assert_eq!(retrieved_user.unwrap().password.as_ref(), user.password.as_ref());
+    let retrieved_user: Result<&User, UserStoreError> = store.validate_user(
+      &user.email, 
+      &password.expose_secret()
+    ).await;
+    assert_eq!(
+      retrieved_user.unwrap().password, 
+      user.password);
   }
 }

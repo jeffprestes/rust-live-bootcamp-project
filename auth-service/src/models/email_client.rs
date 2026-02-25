@@ -1,3 +1,5 @@
+use color_eyre::eyre::Result;
+
 #[derive(Debug, Clone)]
 pub enum EmailClientError {
   SendError(String),

@@ -9,6 +9,8 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use crate::models::data_store::TwoFACode;
 use crate::models::data_store::TwoFACodeStoreError;
+use crate::models::data_store::TwoFACodeStore;
+
 
 use crate::utils::auth::generate_auth_token_wrap_into_cookie;
 use crate::{
@@ -39,7 +41,7 @@ pub async fn verify_2fa(
     }
   };
 
-  match Email::validate(&request.email.address.as_str()) {
+  match Email::validate(&request.email.address) {
     Ok(_) => (),
     Err(err) => {
       return (jar, (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: err.to_string() }))).into_response();
@@ -47,14 +49,14 @@ pub async fn verify_2fa(
   };
 
   let user_store = state.user_store.read().await;
-  match user_store.get_user(request.email.address.as_str()).await {
+  match user_store.get_user(request.email.clone()).await {
     Ok(user) => user,
     Err(_) => {
       return (jar, (StatusCode::NOT_FOUND, Json(ErrorResponse { error: "Usuário não encontrado".to_string() }))).into_response();
     }
   };
 
-  let mut two_fa_code_store = state.two_fa_code_store.write().await;
+  let mut two_fa_code_store: tokio::sync::RwLockWriteGuard<'_, dyn TwoFACodeStore + Send + Sync + 'static> = state.two_fa_code_store.write().await;
 
   match two_fa_code_store.validate_code(&request.login_attempt_id, &two_fa_code).await {
     Ok(_) => (),

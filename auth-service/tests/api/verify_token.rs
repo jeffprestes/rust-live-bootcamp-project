@@ -1,7 +1,8 @@
 use auth_service::{
-  models::{email::Email, verify_token::VerifyTokenRequest},
+  models::verify_token::VerifyTokenRequest,
   utils::{auth::generate_auth_token, constants::JWT_COOKIE_NAME},
 };
+use secrecy::ExposeSecret;
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -30,10 +31,7 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_200_if_valid_token() {
   let app = TestApp::new().await;
-  let random_email = get_random_email();
-  let email = Email {
-    address: random_email,
-  }; 
+  let email = get_random_email();
   let valid_token = generate_auth_token(&email).unwrap();
   let token = VerifyTokenRequest {
     token: valid_token,
@@ -45,9 +43,9 @@ async fn should_return_200_if_valid_token() {
 #[tokio::test]
 async fn should_return_401_if_banned_token() {
   let app = TestApp::new().await; 
-  let random_email = get_random_email();
+  let email = get_random_email();
   let body = serde_json::json!({
-    "email": random_email,
+    "email": email.address.expose_secret(),
     "password": "password",
     "requires2FA": false
   });

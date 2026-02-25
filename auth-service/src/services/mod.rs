@@ -5,3 +5,4 @@ pub mod hashmap_2fa_code_store;
 pub mod email_client;
 pub mod data_stores;
 pub mod redis_2fa_code_store;
+pub mod postmark_email_client;

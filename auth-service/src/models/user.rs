@@ -1,10 +1,8 @@
-use std::hash::Hash;
-
+use secrecy::SecretString;
 use uuid::Uuid;
 use crate::models::{email::Email, password::HashedPassword};
 
-#[derive(serde::Deserialize, Debug, PartialEq, Clone, Eq, Hash)]
-
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct User {
     pub id: u64,
     pub email: Email,
@@ -13,7 +11,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: Email, password: String, requires_2_fa: bool) -> Self {
+    pub fn new(email: Email, password: SecretString, requires_2_fa: bool) -> Self {
         Self {
             id: generate_random_id(),
             email,

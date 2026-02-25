@@ -30,13 +30,31 @@ impl PartialEq for UserStoreError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
 pub enum TwoFACodeStoreError {
+  #[error("Código já existe")]
   CodeAlreadyExists,
+  #[error("Código inválido")]
   InvalidCode,
+  #[error("Código não encontrado")]
   NotFoundCode,
-  UnexpectedError,
+  #[error("Erro inesperado")]
+  UnexpectedError(#[source] Report),
+  #[error("Código expirado")]
   ExpiredCode
+}
+
+impl PartialEq for TwoFACodeStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (TwoFACodeStoreError::CodeAlreadyExists, TwoFACodeStoreError::CodeAlreadyExists) |
+            (TwoFACodeStoreError::InvalidCode, TwoFACodeStoreError::InvalidCode) |
+            (TwoFACodeStoreError::NotFoundCode, TwoFACodeStoreError::NotFoundCode) |
+            (TwoFACodeStoreError::UnexpectedError(_), TwoFACodeStoreError::UnexpectedError(_)) |
+            (TwoFACodeStoreError::ExpiredCode, TwoFACodeStoreError::ExpiredCode)
+        )
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -47,8 +65,8 @@ pub enum BannedTokenStoreError {
 #[async_trait::async_trait]
 pub trait UserStore {
   async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
-  async fn get_user(&self, email: &str) -> Result<&User, UserStoreError>;
-  async fn validate_user(&self, email: &str, raw_password: &str) -> Result<&User, UserStoreError>;
+  async fn get_user(&self, email: Email) -> Result<&User, UserStoreError>;
+  async fn validate_user(&self, email: &Email, raw_password: &str) -> Result<&User, UserStoreError>;
 }
 
 #[async_trait::async_trait]

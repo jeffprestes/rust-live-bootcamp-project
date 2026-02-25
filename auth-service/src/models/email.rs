@@ -1,3 +1,7 @@
+use secrecy::SecretString;
+use secrecy::ExposeSecret;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum EmailError {
     InvalidEmail,
@@ -16,23 +20,44 @@ impl EmailError {
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[serde(transparent)]
+#[derive(Debug, Clone)]
 pub struct Email {
-    pub address: String,
+    pub address: SecretString,
+}
+
+impl Serialize for Email {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.address.expose_secret())
+    }
+}
+
+impl<'de> Deserialize<'de> for Email {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let secret = SecretString::new(s.into());
+        Email::new(secret).map_err(|e| serde::de::Error::custom(e.to_string()))
+    }
 }
 
 impl Email {
-    pub fn new(address: String) -> Result<Self, EmailError> {
+    pub fn new(address: SecretString) -> Result<Self, EmailError> {
       Email::validate(&address)?;
       Ok(Self { address })
     }
 
     pub fn validate_string(address: String) -> Result<bool, EmailError> {
-      Email::validate(&address)
+      let secret_address = SecretString::new(address.into());
+      Email::validate(&secret_address)
     }
 
-    pub fn validate(address: &str) -> Result<bool, EmailError> {
+    pub fn validate(address: &SecretString) -> Result<bool, EmailError> {
+      let address = address.expose_secret().to_string();
       if address.is_empty() {
         return Err(EmailError::InvalidEmail);
       }
@@ -49,8 +74,21 @@ impl Email {
     }
 }
 
-impl AsRef<str> for Email {
-    fn as_ref(&self) -> &str {
+impl AsRef<SecretString> for Email {
+    fn as_ref(&self) -> &SecretString {
         &self.address
     }
+}
+
+// Define the structure of the email request body
+// For more information about the request structure, see the API docs: https://postmarkapp.com/developer/user-guide/send-email-with-api
+#[derive(serde::Serialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct SendEmailRequest<'a> {
+    pub from: &'a str,
+    pub to: &'a str,
+    pub subject: &'a str,
+    pub html_body: &'a str,
+    pub text_body: &'a str,
+    pub message_stream: &'a str,
 }

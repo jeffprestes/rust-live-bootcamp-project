@@ -1,5 +1,6 @@
 use sqlx::PgPool;
 use color_eyre::eyre::{eyre, Result};
+use secrecy::{SecretString, ExposeSecret};
 
 use crate::models::{data_store::{UserStore, UserStoreError}, email::Email, password::HashedPassword, user::User};
 use sqlx::Row;
@@ -47,8 +48,8 @@ impl UserStore for PostgresUserStore {
     let insert_query = "INSERT INTO users (id, email, password_hash, requires_2fa) VALUES ($1, $2, $3, $4)";
     sqlx::query(insert_query)
       .bind(user.id as i64) // Convert u64 to i64 for PostgreSQL
-      .bind(user.email.address.clone())
-      .bind(user.password.as_ref())
+      .bind(user.email.address.clone().expose_secret())
+      .bind(user.password.as_ref().expose_secret())
       .bind(user.requires_2_fa)
       .execute(&self.pool)
       .await
@@ -60,10 +61,10 @@ impl UserStore for PostgresUserStore {
   }
 
   #[tracing::instrument(name = "Obtendo usuário do PostgreSQL", skip_all)]
-  async fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
+  async fn get_user(&self, email: Email) -> Result<&User, UserStoreError> {
     let select_query = "SELECT id, email, password_hash, requires_2fa FROM users WHERE email = $1";
     let row = sqlx::query(select_query)
-      .bind(email)
+      .bind(email.address.clone().expose_secret())
       .fetch_one(&self.pool)
       .await
       .map_err(|e| {
@@ -73,8 +74,8 @@ impl UserStore for PostgresUserStore {
     
     let user = User {
       id: row.get::<i64, _>("id") as u64, // Convert i64 back to u64
-      email: Email::new(row.get::<String, _>("email")).unwrap(),
-      password: HashedPassword::parse_password_hash(row.get::<String, _>("password_hash")).unwrap(),
+      email: Email::new(SecretString::new(row.get::<String, _>("email").into())).unwrap(),
+      password: HashedPassword::parse_password_hash(SecretString::new(row.get::<String, _>("password_hash").into_boxed_str())).unwrap(),
       requires_2_fa: row.get::<bool, _>("requires_2fa"),
     };
     
@@ -82,8 +83,8 @@ impl UserStore for PostgresUserStore {
   }
 
   #[tracing::instrument(name = "Validando usuário no PostgreSQL", skip_all)]
-  async fn validate_user(&self, email: &str, _raw_password: &str) -> Result<&User, UserStoreError> {
-    let user = self.get_user(email).await?;
+  async fn validate_user(&self, email: &Email, _raw_password: &str) -> Result<&User, UserStoreError> {
+    let user = self.get_user(email.clone()).await?;
     let wrong_password= "wrong_password";
     user.password.verify_raw_password(wrong_password).await.map_err(|e| {
       tracing::error!("{}", eyre!("PostgresUserStore::validate_user -> Erro ao verificar senha: {:?}", e));

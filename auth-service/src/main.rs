@@ -1,6 +1,9 @@
 use auth_service::{
-    Application, configure_postgres, configure_redis, models::data_store::TwoFACodeStore as _, services::email_client::MockEmailClient, utils::{constants::prod, tracing::init_tracing}}
-;
+    Application, configure_postgres, configure_postmark_email_client, configure_redis,
+    models::data_store::TwoFACodeStore as _,
+    utils::constants::prod,
+    utils::tracing::init_tracing,
+};
 
 #[tokio::main]
 #[warn(unused_variables)]
@@ -31,8 +34,9 @@ async fn main() {
         auth_service::services::redis_2fa_code_store::RedisTwoFACodeStore::new().await,
     ));
 
+    
     let email_client: std::sync::Arc<dyn auth_service::models::email_client::EmailClient + Send + Sync> =
-        std::sync::Arc::new(MockEmailClient {});
+        std::sync::Arc::new(configure_postmark_email_client());
 
     let app_state = auth_service::app_state::AppState::new(user_store, banned_token_store, two_fa_code_store, email_client);
 
@@ -41,7 +45,7 @@ async fn main() {
     .expect("Falha ao subir a aplicação");
 
     tracing::info!("auth-service::main -> Servidor rodando em {}", app.address);
-    tracing::info!("auth-service::main -> versao 20260223-11");
+    tracing::info!("auth-service::main -> versao 20260224-08");
     tracing::info!("auth-service::main -> Pressione Ctrl+C para parar o servidor.");
 
     app.run_until_stopped()

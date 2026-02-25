@@ -1,6 +1,7 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use jsonwebtoken::{encode, EncodingKey, Header};
+use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 use crate::{app_state::AppState, models::email::Email, utils::constants::{JWT_COOKIE_NAME, JWT_SECRET}};
@@ -42,7 +43,7 @@ pub fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> 
     .map_err(|_| GenerateTokenError::UnexpectedError)?;
 
   let claims = Claims {
-    sub: email.address.clone(),
+    sub: email.address.expose_secret().to_string(),
     exp: expiration,
   };
 
@@ -121,7 +122,7 @@ mod tests {
   #[tokio::test]
   async fn test_generate_auth_cookie() {
     let email = Email {
-      address: "teste@example.com".to_string(),
+      address: "teste@example.com".to_string().into(),
     };
 
     let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
@@ -146,7 +147,7 @@ mod tests {
   #[tokio::test]
   async fn test_generate_auth_token() {
     let email = Email {
-      address: "teste@example.com".to_string(),
+      address: "teste@example.com".to_string().into(),
     };
 
     let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
@@ -160,7 +161,7 @@ mod tests {
   #[tokio::test]
   async fn test_validate_token_with_valid_token() {
     let email = Email {
-      address: "teste@example.com".to_string(),
+      address: "teste@example.com".to_string().into(),
     };
 
     let cookie = generate_auth_token_wrap_into_cookie(&email).unwrap();
@@ -168,7 +169,7 @@ mod tests {
     assert!(resultado.is_ok());
 
     let claims = resultado.unwrap();
-    assert_eq!(claims.sub, email.address);
+    assert_eq!(claims.sub, email.address.expose_secret().to_string());
 
     let experiracao = Utc::now()
     .checked_add_signed(chrono::Duration::minutes(9))

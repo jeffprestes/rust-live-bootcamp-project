@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use secrecy::SecretString;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct LoginRequest {
-  pub email: String,
-  pub password: String,
+  pub email: SecretString,
+  pub password: SecretString,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

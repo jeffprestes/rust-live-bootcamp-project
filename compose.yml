@@ -18,7 +18,7 @@ services:
       DATABASE_URL: "postgres://rust:teste@host.docker.internal:5432/postgres"
       POSTGRES_PASSWORD: "teste"
       REDIS_URL: "redis://host.docker.internal:6379"
-      POSTMARK_AUTH_TOKEN: "fe96121e-dd18-412d-a5d1-3abe6ad824c5"
+      POSTMARK_AUTH_TOKEN: ${POSTMARK_AUTH_TOKEN}
     restart: "always" # automatically restart container when server crashes
     ports:
       - "3000:3000" # expose port 3000 so that applications outside the container can connect to it 

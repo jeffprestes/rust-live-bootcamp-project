@@ -46,7 +46,7 @@ impl EmailClient for PostmarkEmailClient {
 
         let response = request.send().await.map_err(|e| {
             tracing::error!("postmark_email_client::send_email -> Erro ao enviar email: {}", e.to_string());
-            EmailClientError::SendError(format!("postmark_email_client::send_email -> Erro ao enviar email :: {}", e.to_string()))
+            EmailClientError::SendError(format!("postmark_email_client::send_email -> Erro ao enviar email. Erro: {}", e.to_string()))
         })?;
 
 

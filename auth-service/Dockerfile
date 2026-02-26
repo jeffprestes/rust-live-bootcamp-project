@@ -2,7 +2,7 @@
 FROM rust:1.93-alpine AS chef
 USER root
 # Add cargo-chef to cache dependencies
-RUN apk add --no-cache musl-dev & cargo install cargo-chef
+RUN apk add --no-cache musl-dev && cargo install cargo-chef
 WORKDIR /app
   
 FROM chef AS planner
@@ -16,7 +16,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
-RUN cargo build --release --bin auth-service
+RUN RUSTFLAGS="-C target-cpu=native -C link-arg=-s" cargo build --release --bin auth-service
 
 # We do not need the Rust toolchain to run the binary!
 # Start with a minimal image and copy over the binary and assets folder.

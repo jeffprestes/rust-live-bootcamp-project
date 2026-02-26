@@ -96,7 +96,7 @@ impl HashedPassword {
                 Version::V0x13,
                 Params::new(15000, 2, 1, None)?,
             )
-            .hash_password(password.as_bytes(), &salt).map_err(|e| eyre!("Falha ao computar hash da senha: {}", e))?
+            .hash_password(password.as_bytes(), &salt).map_err(|e| eyre!("Falha ao computar hash da senha -> {}", e))?
             .to_string();
             Ok(SecretString::new(password_hash.into_boxed_str()))
 
